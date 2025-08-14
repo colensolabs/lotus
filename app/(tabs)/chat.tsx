@@ -20,15 +20,15 @@ import { TypingIndicator } from '@/components/TypingIndicator';
 import { useStreamingSpeed } from '@/hooks/useStreamingSpeed';
 
 const SUGGESTION_PROMPTS = [
-  "How can I navigate disagreements while staying calm and respectful?",
-  "What are some ways to deepen empathy and understanding in my connections?",
-  "How might I be more present with others during conversations?",
-  "What can I do when I feel hurt by someone close to me?",
-  "How can I support someone who is going through a tough time?",
-  "What role does forgiveness play in healthy relationships?",
-  "How do I balance my own needs with those of people I care about?",
-  "What habits encourage more meaningful connections?",
-  "How can I heal after conflict or disappointment in a relationship?"
+  "How can I improve my relationships?",
+  "What makes healthy friendships?",
+  "How to handle disagreements?",
+  "When someone hurts me?",
+  "Supporting someone in pain?",
+  "The role of forgiveness?",
+  "Balancing my needs with others?",
+  "Building deeper connections?",
+  "Healing after conflict?"
 ];
 
 const getRandomSuggestions = (count: number = 3): string[] => {
@@ -349,14 +349,17 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   suggestionsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingHorizontal: 16,
-    gap: 12,
+    gap: 8,
+    justifyContent: 'center',
   },
   suggestionBubble: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderWidth: 1,
     borderColor: '#E8E8E8',
     shadowColor: '#000',
@@ -369,10 +372,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   suggestionText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#2C2C2C',
-    textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 16,
   },
   userMessageContainer: {
     alignItems: 'flex-end',
