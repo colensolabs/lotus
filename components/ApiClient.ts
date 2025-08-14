@@ -268,5 +268,22 @@ Respond naturally without any special formatting or sections.
 const apiInstance = new BuddhistGuidanceAPI();
 
 export const getBuddhistGuidance = async (message: string, isFollowUp: boolean = false): Promise<BuddhistGuidanceResponse> => {
+  if (isFollowUp) {
+    // Return hardcoded follow-up response
+    return {
+      intro: '',
+      practicalSteps: '',
+      reflection: '',
+      scripture: {
+        text: '',
+        source: '',
+        explanation: ''
+      },
+      outro: '',
+      isFollowUp: true,
+      simpleResponse: 'this is a follow up'
+    };
+  }
+  
   return apiInstance.getBuddhistGuidance(message, isFollowUp);
 };
