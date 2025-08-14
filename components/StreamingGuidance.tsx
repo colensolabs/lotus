@@ -50,9 +50,6 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
         setCurrentSection('outro');
         break;
       case 'outro':
-        setCurrentSection('outro');
-        break;
-      case 'outro':
         setCurrentSection('complete');
         setShowStopButton(false);
         break;
