@@ -50,6 +50,9 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
         setCurrentSection('outro');
         break;
       case 'outro':
+        setCurrentSection('outro');
+        break;
+      case 'outro':
         setCurrentSection('complete');
         setShowStopButton(false);
         break;
@@ -167,6 +170,24 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
             />
           ) : (
             <Text style={styles.explanationText}>{guidance.scripture.explanation}</Text>
+          )}
+        </View>
+      )}
+
+      {/* Outro Section */}
+      {(currentSection === 'outro' || currentSection === 'complete' || isCancelled) && (
+        <View style={styles.outroContainer}>
+          {currentSection === 'outro' && !isCancelled ? (
+            <StreamingText
+              text={guidance.outro}
+              speed={speed}
+              onComplete={handleSectionComplete}
+              isCancelled={isCancelled}
+              hapticsEnabled={hapticsEnabled}
+              style={styles.outroText}
+            />
+          ) : (
+            <Text style={styles.outroText}>{guidance.outro}</Text>
           )}
         </View>
       )}
@@ -301,11 +322,8 @@ const styles = StyleSheet.create({
     color: '#5A5A5A',
     lineHeight: 20,
   },
-  outroSection: {
+  outroContainer: {
     marginTop: 20,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
   },
   outroText: {
     fontSize: 16,
