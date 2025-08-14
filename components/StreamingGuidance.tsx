@@ -205,7 +205,7 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
             activeOpacity={0.7}
           >
             <Square size={16} color="#FFFFFF" strokeWidth={2} />
-            <Text style={styles.stopButtonText}>Show</Text>
+            <Text style={styles.stopButtonText}>Skip</Text>
           </TouchableOpacity>
         )}
       </View>
