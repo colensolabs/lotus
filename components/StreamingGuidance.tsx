@@ -14,6 +14,7 @@ interface StreamingGuidanceProps {
       source: string;
       explanation: string;
     };
+    outro: string;
   };
   speed: number;
   onRetry?: () => void;
@@ -46,6 +47,9 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
         setCurrentSection('explanation');
         break;
       case 'explanation':
+        setCurrentSection('outro');
+        break;
+      case 'outro':
         setCurrentSection('complete');
         setShowStopButton(false);
         break;
@@ -296,6 +300,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#5A5A5A',
     lineHeight: 20,
+  },
+  outroSection: {
+    marginTop: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  outroText: {
+    fontSize: 16,
+    color: '#2C2C2C',
+    lineHeight: 24,
+    fontStyle: 'italic',
   },
   controlsContainer: {
     flexDirection: 'row',
