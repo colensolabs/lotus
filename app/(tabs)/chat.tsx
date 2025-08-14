@@ -195,6 +195,7 @@ export default function ChatScreen() {
         </ScrollView>
 
         <View style={[styles.inputContainer, { paddingBottom: Platform.OS === 'ios' ? 34 : 12 }]}>
+        <View style={[styles.inputContainer, { paddingBottom: Platform.OS === 'ios' ? 8 : 12 }]}>
           <TextInput
             style={styles.textInput}
             value={inputText}
