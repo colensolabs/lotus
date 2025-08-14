@@ -349,16 +349,15 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   suggestionsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 16,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    paddingHorizontal: 24,
     gap: 8,
-    justifyContent: 'center',
   },
   suggestionBubble: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingHorizontal: 12,
+    borderRadius: 20,
+    paddingHorizontal: 16,
     paddingVertical: 8,
     borderWidth: 1,
     borderColor: '#E8E8E8',
@@ -372,9 +371,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   suggestionText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#2C2C2C',
-    lineHeight: 16,
+    lineHeight: 18,
   },
   userMessageContainer: {
     alignItems: 'flex-end',
