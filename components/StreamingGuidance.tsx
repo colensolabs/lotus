@@ -50,8 +50,11 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
         setCurrentSection('outro');
         break;
       case 'outro':
-        setCurrentSection('complete');
+        setCurrentSection('outro');
         setShowStopButton(false);
+        break;
+      case 'outro':
+        setCurrentSection('complete');
         break;
     }
   };
@@ -155,7 +158,7 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
       )}
 
       {/* Explanation Section */}
-      {(currentSection === 'explanation' || currentSection === 'complete' || isCancelled) && (
+      {(currentSection === 'explanation' || currentSection === 'outro' || currentSection === 'complete' || isCancelled) && (
         <View style={styles.explanationSection}>
           <Text style={styles.explanationTitle}>Understanding the Teaching</Text>
           {currentSection === 'explanation' && !isCancelled ? (
@@ -169,6 +172,24 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
             />
           ) : (
             <Text style={styles.explanationText}>{guidance.scripture.explanation}</Text>
+          )}
+        </View>
+      )}
+
+      {/* Outro Section */}
+      {(currentSection === 'outro' || currentSection === 'complete' || isCancelled) && guidance.outro && (
+        <View style={styles.outroContainer}>
+          {currentSection === 'outro' && !isCancelled ? (
+            <StreamingText
+              text={guidance.outro}
+              speed={speed}
+              onComplete={handleSectionComplete}
+              isCancelled={isCancelled}
+              hapticsEnabled={hapticsEnabled}
+              style={styles.outroText}
+            />
+          ) : (
+            <Text style={styles.outroText}>{guidance.outro}</Text>
           )}
         </View>
       )}
@@ -306,13 +327,15 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   outroContainer: {
-    marginTop: 20,
+    marginTop: 24,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
   },
   outroText: {
     fontSize: 16,
     color: '#2C2C2C',
     lineHeight: 24,
-    fontStyle: 'italic',
   },
   controlsContainer: {
     flexDirection: 'row',

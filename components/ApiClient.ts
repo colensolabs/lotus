@@ -133,7 +133,7 @@ Keep the response compassionate, practical, and grounded in authentic Buddhist w
         .trim();
 
       // Parse Intro
-      const introMatch = cleanContent.match(/^([\s\S]*?)(?=PRACTICAL STEPS:|REFLECTION:|SCRIPTURE:|$)/i);
+      const introMatch = cleanContent.match(/(?:INTRO:\s*)?([\s\S]*?)(?=PRACTICAL STEPS:|REFLECTION:|SCRIPTURE:|$)/i);
       console.log('Intro match:', introMatch ? introMatch[1].substring(0, 100) + '...' : 'No match');
       if (introMatch) {
         sections.intro = this.cleanSection(introMatch[1]);
@@ -153,7 +153,7 @@ Keep the response compassionate, practical, and grounded in authentic Buddhist w
       }
 
       // Parse Scripture
-      const scriptureMatch = cleanContent.match(/SCRIPTURE:\s*([\s\S]*?)$/i);
+      const scriptureMatch = cleanContent.match(/SCRIPTURE:\s*([\s\S]*?)(?=OUTRO:|$)/i);
       if (scriptureMatch) {
         const scriptureContent = scriptureMatch[1];
         
@@ -167,7 +167,7 @@ Keep the response compassionate, practical, and grounded in authentic Buddhist w
           sections.scripture.source = sourceMatch[1].trim();
         }
 
-        const explanationMatch = scriptureContent.match(/Explanation:\s*([\s\S]*?)$/i);
+        const explanationMatch = scriptureContent.match(/Explanation:\s*([\s\S]*?)(?=OUTRO:|$)/i);
         if (explanationMatch) {
           sections.scripture.explanation = this.cleanSection(explanationMatch[1]);
         }
