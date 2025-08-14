@@ -13,9 +13,10 @@ import {
   Image,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { Send, User, Bot as Lotus, MessageSquare } from 'lucide-react-native';
+import { Send, User, Bot as Lotus, MessageSquare, Square } from 'lucide-react-native';
 import { getBuddhistGuidance } from '@/components/ApiClient';
 import { StreamingGuidance } from '@/components/StreamingGuidance';
+import { StreamingText } from '@/components/StreamingText';
 import { TypingIndicator } from '@/components/TypingIndicator';
 import { useStreamingSpeed } from '@/hooks/useStreamingSpeed';
 
@@ -42,6 +43,7 @@ interface Message {
   timestamp: Date;
   isStreaming?: boolean;
   isCancelled?: boolean;
+  isFollowUp?: boolean;
   guidance?: {
     intro: string;
     practicalSteps: string;
@@ -52,6 +54,7 @@ interface Message {
       explanation: string;
     };
   };
+  simpleResponse?: string;
 }
 
 export default function ChatScreen() {
@@ -63,6 +66,7 @@ export default function ChatScreen() {
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
+  const [conversationStarted, setConversationStarted] = useState(false);
 
   useEffect(() => {
     // Generate random suggestions on component mount
@@ -72,6 +76,7 @@ export default function ChatScreen() {
   useEffect(() => {
     if (initialPrompt && typeof initialPrompt === 'string') {
       handleSendMessage(initialPrompt);
+      setConversationStarted(true);
     }
   }, [initialPrompt]);
 
@@ -90,20 +95,45 @@ export default function ChatScreen() {
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
     setIsLoading(true);
+    
+    // Determine if this is a follow-up message
+    const isFollowUp = conversationStarted && messages.length > 0;
 
-    getBuddhistGuidance(messageText)
+    getBuddhistGuidance(messageText, isFollowUp)
       .then((guidance) => {
         const messageId = (Date.now() + 1).toString();
-        const botMessage: Message = {
-          id: messageId,
-          text: guidance.intro,
-          isUser: false,
-          timestamp: new Date(),
-          isStreaming: true,
-          guidance,
-        };
+        
+        let botMessage: Message;
+        
+        if (guidance.isFollowUp && guidance.simpleResponse) {
+          // Follow-up response - simple format
+          botMessage = {
+            id: messageId,
+            text: guidance.simpleResponse,
+            isUser: false,
+            timestamp: new Date(),
+            isStreaming: true,
+            isFollowUp: true,
+            simpleResponse: guidance.simpleResponse,
+          };
+        } else {
+          // Initial structured response
+          botMessage = {
+            id: messageId,
+            text: guidance.intro,
+            isUser: false,
+            timestamp: new Date(),
+            isStreaming: true,
+            guidance,
+          };
+        }
+        
         setMessages(prev => [...prev, botMessage]);
         setStreamingMessageId(messageId);
+        
+        if (!conversationStarted) {
+          setConversationStarted(true);
+        }
       })
       .catch((error) => {
         console.error('API Error:', error);
@@ -152,6 +182,7 @@ export default function ChatScreen() {
 
   const handleSuggestionPress = (suggestion: string) => {
     handleSendMessage(suggestion);
+    setConversationStarted(true);
   };
 
   const SuggestionBubbles = () => (
@@ -179,6 +210,41 @@ export default function ChatScreen() {
         </View>
       );
     }
+    
+    // Handle follow-up messages with simple streaming text
+    if (message.isFollowUp && message.simpleResponse) {
+      return (
+        <View key={message.id} style={styles.botMessageContainer}>
+          <View style={styles.botIconContainer}>
+            <Image source={require('../../assets/images/logo2.jpg')} style={styles.botIconImage} />
+          </View>
+          <View style={styles.botMessage}>
+            <StreamingText
+              text={message.simpleResponse}
+              speed={speedValue}
+              onComplete={() => handleStreamingComplete(message.id)}
+              isCancelled={message.isCancelled}
+              hapticsEnabled={true}
+              style={styles.followUpText}
+            />
+            {message.isStreaming && streamingMessageId === message.id && (
+              <View style={styles.followUpControlsContainer}>
+                <TouchableOpacity
+                  style={styles.followUpShowButton}
+                  onPress={() => handleStreamingCancel(message.id)}
+                  activeOpacity={0.7}
+                >
+                  <Square size={16} color="#FFFFFF" strokeWidth={2} />
+                  <Text style={styles.followUpShowButtonText}>Show</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+      );
+    }
+    
+    // Handle structured guidance messages
     return (
       <View key={message.id} style={styles.botMessageContainer}>
         <View style={styles.botIconContainer}>
@@ -492,5 +558,38 @@ const styles = StyleSheet.create({
   sendButtonDisabled: {
     backgroundColor: '#E8E8E8',
     shadowOpacity: 0,
+  },
+  followUpText: {
+    fontSize: 15,
+    color: '#2C2C2C',
+    lineHeight: 24,
+  },
+  followUpControlsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 16,
+    gap: 8,
+  },
+  followUpShowButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#D4AF37',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    shadowColor: '#D4AF37',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  followUpShowButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 4,
   },
 });

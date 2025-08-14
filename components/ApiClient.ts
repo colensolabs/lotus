@@ -8,6 +8,8 @@ interface BuddhistGuidanceResponse {
     explanation: string;
   };
   outro: string;
+  isFollowUp?: boolean;
+  simpleResponse?: string;
 }
 
 interface ApiResponse {
@@ -29,8 +31,8 @@ export class BuddhistGuidanceAPI {
     // Using hardcoded API key
   }
 
-  async getBuddhistGuidance(userMessage: string): Promise<BuddhistGuidanceResponse> {
-    const prompt = this.createStructuredPrompt(userMessage);
+  async getBuddhistGuidance(userMessage: string, isFollowUp: boolean = false): Promise<BuddhistGuidanceResponse> {
+    const prompt = isFollowUp ? this.createFollowUpPrompt(userMessage) : this.createStructuredPrompt(userMessage);
 
     try {
       const response = await fetch(PERPLEXITY_API_URL, {
@@ -44,7 +46,9 @@ export class BuddhistGuidanceAPI {
           messages: [
             {
               role: 'system',
-              content: 'You are a compassionate Buddhist counselor providing guidance rooted in authentic Buddhist teachings. Always respond with structured advice in the exact format requested.'
+              content: isFollowUp 
+                ? 'You are a compassionate Buddhist counselor. Respond naturally and conversationally to continue the dialogue. Keep responses warm, supportive, and grounded in Buddhist wisdom without formal structure. Be engaging but dont give long answers, a few sentences only. Be concise and asks questions if needed.'
+                : 'You are a compassionate Buddhist counselor providing guidance rooted in authentic Buddhist teachings. Always respond with structured advice in the exact format requested.'
             },
             {
               role: 'user',
@@ -67,7 +71,7 @@ export class BuddhistGuidanceAPI {
       console.log('Raw API Response:', content);
       console.log('---');
       
-      return this.parseStructuredResponse(content);
+      return isFollowUp ? this.parseFollowUpResponse(content) : this.parseStructuredResponse(content);
     } catch (error) {
       console.error('API Error:', error);
       throw new Error('Failed to get Buddhist guidance. Please try again.');
@@ -99,6 +103,22 @@ OUTRO:
 [Provide 2-3 thoughtful, specific questions that invite the person to go deeper into their situation. Ask about specific aspects they mentioned, people involved, or next steps they might consider. Keep it warm and supportive, like: "Can you tell me more about the relationships you're looking to improve?" or "What do you think might be the first step you could take?"]
 
 Keep the response compassionate, practical, and grounded in authentic Buddhist wisdom.
+    `;
+  }
+
+  private createFollowUpPrompt(userMessage: string): string {
+    return `
+This is a follow-up question in an ongoing Buddhist guidance conversation: "${userMessage}"
+
+Please provide a compassionate, conversational response that:
+- Directly addresses their follow-up question
+- Maintains the warm, supportive tone from the initial guidance
+- Offers practical Buddhist wisdom without formal structure
+- Keeps the response natural and flowing, like a caring conversation
+- Is 2-4 paragraphs maximum
+- Ends with a gentle question to continue the dialogue
+
+Respond naturally without any special formatting or sections.
     `;
   }
 
@@ -204,6 +224,30 @@ Keep the response compassionate, practical, and grounded in authentic Buddhist w
     }
   }
 
+  private parseFollowUpResponse(content: string): BuddhistGuidanceResponse {
+    // Clean up the content
+    const cleanContent = content
+      .replace(/\*\*/g, '') // Remove bold markdown
+      .replace(/\*/g, '') // Remove italic markdown
+      .replace(/\[\d+\]/g, '') // Remove citation numbers
+      .replace(/\(\d+\)/g, '') // Remove parenthetical numbers
+      .trim();
+
+    return {
+      intro: '',
+      practicalSteps: '',
+      reflection: '',
+      scripture: {
+        text: '',
+        source: '',
+        explanation: ''
+      },
+      outro: '',
+      isFollowUp: true,
+      simpleResponse: cleanContent
+    };
+  }
+
   private cleanSection(text: string): string {
     return text
       .trim()
@@ -225,6 +269,6 @@ Keep the response compassionate, practical, and grounded in authentic Buddhist w
 // Singleton instance
 const apiInstance = new BuddhistGuidanceAPI();
 
-export const getBuddhistGuidance = async (message: string): Promise<BuddhistGuidanceResponse> => {
-  return apiInstance.getBuddhistGuidance(message);
+export const getBuddhistGuidance = async (message: string, isFollowUp: boolean = false): Promise<BuddhistGuidanceResponse> => {
+  return apiInstance.getBuddhistGuidance(message, isFollowUp);
 };
