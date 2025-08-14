@@ -4,9 +4,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export type StreamingSpeed = 'slow' | 'normal' | 'fast';
 
 const SPEED_MAP: Record<StreamingSpeed, number> = {
-  slow: 20,
-  normal: 40,
-  fast: 80,
+  slow: 15,
+  normal: 25,
+  fast: 50,
 };
 
 const STORAGE_KEY = 'streaming_speed';
