@@ -336,6 +336,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#2C2C2C',
     lineHeight: 24,
+    fontStyle: 'italic',
   },
   controlsContainer: {
     flexDirection: 'row',
