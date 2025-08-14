@@ -7,6 +7,7 @@ interface BuddhistGuidanceResponse {
     source: string;
     explanation: string;
   };
+  outro: string;
 }
 
 interface ApiResponse {
@@ -94,6 +95,9 @@ Text: "[Include a relevant Buddhist quote or teaching]"
 Source: "[Specify the source - sutra, teacher, or text]"
 Explanation: "[Explain how this teaching applies to their situation in 2-3 sentences]"
 
+OUTRO:
+[Provide 2-3 thoughtful, specific questions that invite the person to go deeper into their situation. Ask about specific aspects they mentioned, people involved, or next steps they might consider. Keep it warm and supportive, like: "Can you tell me more about the relationships you're looking to improve?" or "What do you think might be the first step you could take?"]
+
 Keep the response compassionate, practical, and grounded in authentic Buddhist wisdom.
     `;
   }
@@ -109,7 +113,8 @@ Keep the response compassionate, practical, and grounded in authentic Buddhist w
         text: '',
         source: '',
         explanation: ''
-      }
+      },
+      outro: ''
     };
 
     try {
@@ -128,7 +133,7 @@ Keep the response compassionate, practical, and grounded in authentic Buddhist w
         .trim();
 
       // Parse Intro
-      const introMatch = cleanContent.match(/^([\s\S]*?)(?=PRACTICAL STEPS:|REFLECTION:|SCRIPTURE:|$)/i);
+      const introMatch = cleanContent.match(/(?:INTRO:\s*)?([\s\S]*?)(?=PRACTICAL STEPS:|REFLECTION:|SCRIPTURE:|$)/i);
       console.log('Intro match:', introMatch ? introMatch[1].substring(0, 100) + '...' : 'No match');
       if (introMatch) {
         sections.intro = this.cleanSection(introMatch[1]);
@@ -148,7 +153,7 @@ Keep the response compassionate, practical, and grounded in authentic Buddhist w
       }
 
       // Parse Scripture
-      const scriptureMatch = cleanContent.match(/SCRIPTURE:\s*([\s\S]*?)$/i);
+      const scriptureMatch = cleanContent.match(/SCRIPTURE:\s*([\s\S]*?)(?=OUTRO:|$)/i);
       if (scriptureMatch) {
         const scriptureContent = scriptureMatch[1];
         
@@ -162,10 +167,16 @@ Keep the response compassionate, practical, and grounded in authentic Buddhist w
           sections.scripture.source = sourceMatch[1].trim();
         }
 
-        const explanationMatch = scriptureContent.match(/Explanation:\s*([\s\S]*?)$/i);
+        const explanationMatch = scriptureContent.match(/Explanation:\s*([\s\S]*?)(?=OUTRO:|$)/i);
         if (explanationMatch) {
           sections.scripture.explanation = this.cleanSection(explanationMatch[1]);
         }
+      }
+
+      // Parse Outro
+      const outroMatch = cleanContent.match(/OUTRO:\s*([\s\S]*?)$/i);
+      if (outroMatch) {
+        sections.outro = this.cleanSection(outroMatch[1]);
       }
 
       // Debug logging to see what we're parsing
@@ -187,7 +198,8 @@ Keep the response compassionate, practical, and grounded in authentic Buddhist w
           text: sections.scripture.text || "Peace comes from within. Do not seek it without.",
           source: sections.scripture.source || "Buddha",
           explanation: sections.scripture.explanation || "This teaching reminds us that true peace and resolution come from inner work and understanding."
-        }
+        },
+        outro: sections.outro || "What specific aspect of this situation would you like to explore further? I'm here to support you on this journey of understanding and growth."
       };
     }
   }

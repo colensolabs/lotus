@@ -12,7 +12,6 @@ import {
   Alert,
   Image,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { Send, User, Bot as Lotus, MessageSquare } from 'lucide-react-native';
 import { getBuddhistGuidance } from '@/components/ApiClient';
@@ -20,6 +19,22 @@ import { StreamingGuidance } from '@/components/StreamingGuidance';
 import { TypingIndicator } from '@/components/TypingIndicator';
 import { useStreamingSpeed } from '@/hooks/useStreamingSpeed';
 
+const SUGGESTION_PROMPTS = [
+"How can I handle disagreements calmly and respectfully?",
+"How can I deepen empathy and understanding in my relationships?",
+"How can I be more present in conversations?",
+"What can I do when someone close hurts me?",
+"How can I support someone in a tough time?",
+"What role does forgiveness play in healthy relationships?",
+"How do I balance my needs with those I care about?",
+"What habits build more meaningful connections?",
+"How can I heal after conflict or disappointment?",
+];
+
+const getRandomSuggestions = (count: number = 3): string[] => {
+  const shuffled = [...SUGGESTION_PROMPTS].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, 2);
+};
 interface Message {
   id: string;
   text: string;
@@ -46,7 +61,13 @@ export default function ChatScreen() {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    // Generate random suggestions on component mount
+    setSuggestions(getRandomSuggestions(2));
+  }, []);
 
   useEffect(() => {
     if (initialPrompt && typeof initialPrompt === 'string') {
@@ -129,6 +150,25 @@ export default function ChatScreen() {
     setStreamingMessageId(messageId);
   };
 
+  const handleSuggestionPress = (suggestion: string) => {
+    handleSendMessage(suggestion);
+  };
+
+  const SuggestionBubbles = () => (
+    <View style={styles.suggestionsContainer}>
+      {suggestions.map((suggestion, index) => (
+        <TouchableOpacity
+          key={index}
+          style={styles.suggestionBubble}
+          onPress={() => handleSuggestionPress(suggestion)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.suggestionText}>{suggestion}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
   const renderMessage = (message: Message) => {
     if (message.isUser) {
       return (
@@ -157,11 +197,11 @@ export default function ChatScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.keyboardContainer} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <View style={styles.header}>
           <View style={styles.headerLogoContainer}>
             <Image source={require('../../assets/images/logo2.jpg')} style={styles.headerLogoImage} />
@@ -183,6 +223,7 @@ export default function ChatScreen() {
               <Text style={styles.emptyStateText}>
                 Ask for guidance on any challenge you're facing, and receive compassionate Buddhist wisdom.
               </Text>
+             <SuggestionBubbles />
             </View>
           )}
           
@@ -193,7 +234,7 @@ export default function ChatScreen() {
           )}
         </ScrollView>
 
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, Platform.OS === 'ios' && styles.inputContainerIOS]}>
           <TextInput
             style={styles.textInput}
             value={inputText}
@@ -220,8 +261,8 @@ export default function ChatScreen() {
             )}
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -229,6 +270,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F1E8',
+    paddingTop: Platform.OS === 'ios' ? 50 : 0,
+  },
+  keyboardContainer: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -301,6 +346,34 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
     paddingHorizontal: 32,
+    marginBottom: 32,
+  },
+  suggestionsContainer: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    paddingHorizontal: 24,
+    gap: 8,
+  },
+  suggestionBubble: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  suggestionText: {
+    fontSize: 14,
+    color: '#2C2C2C',
+    lineHeight: 18,
   },
   userMessageContainer: {
     alignItems: 'flex-end',
@@ -365,7 +438,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 12,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E8E8E8',
@@ -384,13 +458,20 @@ const styles = StyleSheet.create({
     borderColor: '#E8E8E8',
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     fontSize: 15,
     color: '#2C2C2C',
     backgroundColor: '#F9F7F4',
+    minHeight: 60,
     maxHeight: 100,
     marginRight: 12,
-    lineHeight: 20,
+    textAlignVertical: Platform.OS === 'ios' ? 'center' : 'top',
+    ...Platform.select({
+      ios: {
+        paddingTop: 16,
+        paddingBottom: 16,
+      },
+    }),
   },
   sendButton: {
     width: 44,
