@@ -13,7 +13,7 @@ import {
   Image,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { Send, User, Bot as Lotus, MessageSquare } from 'lucide-react-native';
+import { Send, User, Bot as Lotus, MessageSquare, Square } from 'lucide-react-native';
 import { getBuddhistGuidance } from '@/components/ApiClient';
 import { StreamingGuidance } from '@/components/StreamingGuidance';
 import { StreamingText } from '@/components/StreamingText';
@@ -227,6 +227,18 @@ export default function ChatScreen() {
               hapticsEnabled={true}
               style={styles.followUpText}
             />
+            {message.isStreaming && streamingMessageId === message.id && (
+              <View style={styles.followUpControlsContainer}>
+                <TouchableOpacity
+                  style={styles.followUpShowButton}
+                  onPress={() => handleStreamingCancel(message.id)}
+                  activeOpacity={0.7}
+                >
+                  <Square size={16} color="#FFFFFF" strokeWidth={2} />
+                  <Text style={styles.followUpShowButtonText}>Show</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
       );
@@ -551,5 +563,33 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#2C2C2C',
     lineHeight: 24,
+  },
+  followUpControlsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 16,
+    gap: 8,
+  },
+  followUpShowButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#D4AF37',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    shadowColor: '#D4AF37',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  followUpShowButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 4,
   },
 });
