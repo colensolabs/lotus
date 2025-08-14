@@ -16,7 +16,7 @@ export default function SettingsScreen() {
   const StreamingSpeedSelector = () => {
     const speeds: { value: StreamingSpeed; label: string; description: string }[] = [
       { value: 'slow', label: 'Slow', description: '~15 chars/sec' },
-      { value: 'normal', label: 'Normal', description: '~25 chars/sec' },
+      { value: 'normal', label: 'Normal', description: '~30 chars/sec' },
       { value: 'fast', label: 'Fast', description: '~50 chars/sec' },
     ];
 
