@@ -392,9 +392,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#2C2C2C',
     backgroundColor: '#F9F7F4',
-    maxHeight: 100,
+    minHeight: 44,
+    maxHeight: 120,
     marginRight: 12,
-    lineHeight: 20,
+    textAlignVertical: 'top',
   },
   sendButton: {
     width: 44,
