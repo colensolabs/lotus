@@ -19,6 +19,22 @@ import { StreamingGuidance } from '@/components/StreamingGuidance';
 import { TypingIndicator } from '@/components/TypingIndicator';
 import { useStreamingSpeed } from '@/hooks/useStreamingSpeed';
 
+const SUGGESTION_PROMPTS = [
+  "How can I navigate disagreements while staying calm and respectful?",
+  "What are some ways to deepen empathy and understanding in my connections?",
+  "How might I be more present with others during conversations?",
+  "What can I do when I feel hurt by someone close to me?",
+  "How can I support someone who is going through a tough time?",
+  "What role does forgiveness play in healthy relationships?",
+  "How do I balance my own needs with those of people I care about?",
+  "What habits encourage more meaningful connections?",
+  "How can I heal after conflict or disappointment in a relationship?"
+];
+
+const getRandomSuggestions = (count: number = 3): string[] => {
+  const shuffled = [...SUGGESTION_PROMPTS].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, count);
+};
 interface Message {
   id: string;
   text: string;
@@ -45,7 +61,13 @@ export default function ChatScreen() {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    // Generate random suggestions on component mount
+    setSuggestions(getRandomSuggestions(3));
+  }, []);
 
   useEffect(() => {
     if (initialPrompt && typeof initialPrompt === 'string') {
@@ -128,6 +150,25 @@ export default function ChatScreen() {
     setStreamingMessageId(messageId);
   };
 
+  const handleSuggestionPress = (suggestion: string) => {
+    handleSendMessage(suggestion);
+  };
+
+  const SuggestionBubbles = () => (
+    <View style={styles.suggestionsContainer}>
+      {suggestions.map((suggestion, index) => (
+        <TouchableOpacity
+          key={index}
+          style={styles.suggestionBubble}
+          onPress={() => handleSuggestionPress(suggestion)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.suggestionText}>{suggestion}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
   const renderMessage = (message: Message) => {
     if (message.isUser) {
       return (
@@ -182,6 +223,7 @@ export default function ChatScreen() {
               <Text style={styles.emptyStateText}>
                 Ask for guidance on any challenge you're facing, and receive compassionate Buddhist wisdom.
               </Text>
+             <SuggestionBubbles />
             </View>
           )}
           
@@ -304,6 +346,33 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
     paddingHorizontal: 32,
+    marginBottom: 32,
+  },
+  suggestionsContainer: {
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  suggestionBubble: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  suggestionText: {
+    fontSize: 14,
+    color: '#2C2C2C',
+    textAlign: 'center',
+    lineHeight: 20,
   },
   userMessageContainer: {
     alignItems: 'flex-end',
