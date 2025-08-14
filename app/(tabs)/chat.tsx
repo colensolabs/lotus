@@ -16,12 +16,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { Send, User, Bot as Lotus, MessageSquare } from 'lucide-react-native';
 import { getBuddhistGuidance } from '@/components/ApiClient';
+import { StreamingGuidance } from '@/components/StreamingGuidance';
+import { TypingIndicator } from '@/components/TypingIndicator';
+import { useStreamingSpeed } from '@/hooks/useStreamingSpeed';
 
 interface Message {
   id: string;
   text: string;
   isUser: boolean;
   timestamp: Date;
+  isStreaming?: boolean;
+  isCancelled?: boolean;
   guidance?: {
     intro: string;
     practicalSteps: string;
@@ -36,9 +41,11 @@ interface Message {
 
 export default function ChatScreen() {
   const { initialPrompt } = useLocalSearchParams<{ initialPrompt?: string }>();
+  const { speedValue } = useStreamingSpeed();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -65,14 +72,17 @@ export default function ChatScreen() {
 
     getBuddhistGuidance(messageText)
       .then((guidance) => {
+        const messageId = (Date.now() + 1).toString();
         const botMessage: Message = {
-          id: (Date.now() + 1).toString(),
+          id: messageId,
           text: guidance.intro,
           isUser: false,
           timestamp: new Date(),
+          isStreaming: true,
           guidance,
         };
         setMessages(prev => [...prev, botMessage]);
+        setStreamingMessageId(messageId);
       })
       .catch((error) => {
         console.error('API Error:', error);
@@ -84,6 +94,39 @@ export default function ChatScreen() {
       .finally(() => {
         setIsLoading(false);
       });
+  };
+
+  const handleStreamingComplete = (messageId: string) => {
+    setMessages(prev => 
+      prev.map(msg => 
+        msg.id === messageId 
+          ? { ...msg, isStreaming: false }
+          : msg
+      )
+    );
+    setStreamingMessageId(null);
+  };
+
+  const handleStreamingCancel = (messageId: string) => {
+    setMessages(prev => 
+      prev.map(msg => 
+        msg.id === messageId 
+          ? { ...msg, isStreaming: false, isCancelled: true }
+          : msg
+      )
+    );
+    setStreamingMessageId(null);
+  };
+
+  const handleRetry = (messageId: string) => {
+    setMessages(prev => 
+      prev.map(msg => 
+        msg.id === messageId 
+          ? { ...msg, isStreaming: true, isCancelled: false }
+          : msg
+      )
+    );
+    setStreamingMessageId(messageId);
   };
 
   const renderMessage = (message: Message) => {
@@ -102,43 +145,11 @@ export default function ChatScreen() {
           <Image source={require('../../assets/images/logo2.jpg')} style={styles.botIconImage} />
         </View>
         <View style={styles.botMessage}>
-          <Text style={styles.botMessageText}>{message.text}</Text>
-          
           {message.guidance && (
-            <View style={styles.guidanceContainer}>
-              <View style={styles.practicalStepsCard}>
-                <Text style={styles.sectionTitle}>Practical Steps</Text>
-                <View style={styles.stepsContainer}>
-                  {message.guidance.practicalSteps
-                    .split(/[•\n]/)
-                    .filter(step => step.trim().length > 0)
-                    .map((step, index) => (
-                      <View key={index} style={styles.stepItem}>
-                        <View style={styles.stepNumber}>
-                          <Text style={styles.stepNumberText}>{index + 1}</Text>
-                        </View>
-                        <Text style={styles.stepText}>{step.trim()}</Text>
-                      </View>
-                    ))}
-                </View>
-              </View>
-
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Reflection</Text>
-                <Text style={styles.sectionText}>{message.guidance.reflection}</Text>
-              </View>
-
-              <View style={styles.scriptureSection}>
-                <Text style={styles.sectionTitle}>Buddhist Teaching</Text>
-                <Text style={styles.scriptureText}>"{message.guidance.scripture.text}"</Text>
-                <Text style={styles.scriptureSource}>— {message.guidance.scripture.source}</Text>
-              </View>
-
-              <View style={styles.explanationSection}>
-                <Text style={styles.explanationTitle}>Understanding the Teaching</Text>
-                <Text style={styles.explanationText}>{message.guidance.scripture.explanation}</Text>
-              </View>
-            </View>
+            <StreamingGuidance
+              guidance={message.guidance}
+              speed={speedValue}
+            />
           )}
         </View>
       </View>
@@ -178,10 +189,7 @@ export default function ChatScreen() {
           {messages.map(renderMessage)}
           
           {isLoading && (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color="#D4AF37" />
-              <Text style={styles.loadingText}>Seeking wisdom...</Text>
-            </View>
+            <TypingIndicator />
           )}
         </ScrollView>
 
@@ -352,126 +360,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
-  },
-  botMessageText: {
-    fontSize: 16,
-    color: '#2C2C2C',
-    lineHeight: 24,
-    fontStyle: 'italic',
-    marginBottom: 16,
-  },
-  guidanceContainer: {
-    marginTop: 8,
-  },
-  section: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#D4AF37',
-    marginBottom: 8,
-    letterSpacing: 0.2,
-  },
-  sectionText: {
-    fontSize: 15,
-    color: '#2C2C2C',
-    lineHeight: 24,
-  },
-  practicalStepsCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 18,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  stepsContainer: {
-    marginTop: 4,
-  },
-  stepItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 14,
-  },
-  stepNumber: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#D4AF37',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-    marginTop: 2,
-    flexShrink: 0,
-  },
-  stepNumberText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  stepText: {
-    fontSize: 15,
-    color: '#2C2C2C',
-    lineHeight: 22,
-    flex: 1,
-  },
-  scriptureSection: {
-    backgroundColor: '#F9F7F4',
-    borderRadius: 12,
-    padding: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: '#D4AF37',
-  },
-  scriptureText: {
-    fontSize: 15,
-    color: '#2C2C2C',
-    lineHeight: 22,
-    fontStyle: 'italic',
-    marginBottom: 8,
-  },
-  scriptureSource: {
-    fontSize: 13,
-    color: '#D4AF37',
-    fontWeight: '600',
-    marginBottom: 0,
-  },
-  explanationSection: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-  },
-  explanationTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#2C2C2C',
-    marginBottom: 8,
-  },
-  explanationText: {
-    fontSize: 14,
-    color: '#5A5A5A',
-    lineHeight: 20,
-  },
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 20,
-  },
-  loadingText: {
-    fontSize: 15,
-    color: '#6B6B6B',
-    marginLeft: 12,
-    fontStyle: 'italic',
   },
   inputContainer: {
     flexDirection: 'row',

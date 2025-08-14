@@ -2,11 +2,50 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 're
 import { Image } from 'react-native';
 import { useState, useEffect } from 'react';
 import { Bot as Lotus, Moon, Bell, Heart, MessageCircle, CircleHelp as HelpCircle, Star } from 'lucide-react-native';
+import { useStreamingSpeed, StreamingSpeed } from '@/hooks/useStreamingSpeed';
 
 export default function SettingsScreen() {
+  const { speed, updateSpeed } = useStreamingSpeed();
   const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [saveConversations, setSaveConversations] = useState(false);
+
+  const StreamingSpeedSelector = () => {
+    const speeds: { value: StreamingSpeed; label: string; description: string }[] = [
+      { value: 'slow', label: 'Slow', description: '~15 chars/sec' },
+      { value: 'normal', label: 'Normal', description: '~25 chars/sec' },
+      { value: 'fast', label: 'Fast', description: '~50 chars/sec' },
+    ];
+
+    return (
+      <View style={styles.speedSelectorContainer}>
+        {speeds.map((speedOption) => (
+          <TouchableOpacity
+            key={speedOption.value}
+            style={[
+              styles.speedOption,
+              speed === speedOption.value && styles.speedOptionSelected
+            ]}
+            onPress={() => updateSpeed(speedOption.value)}
+            activeOpacity={0.7}
+          >
+            <Text style={[
+              styles.speedOptionLabel,
+              speed === speedOption.value && styles.speedOptionLabelSelected
+            ]}>
+              {speedOption.label}
+            </Text>
+            <Text style={[
+              styles.speedOptionDescription,
+              speed === speedOption.value && styles.speedOptionDescriptionSelected
+            ]}>
+              {speedOption.description}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  };
 
   const SettingsRow = ({ 
     icon, 
@@ -57,6 +96,19 @@ export default function SettingsScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Preferences</Text>
+        
+        <View style={styles.settingsRowCustom}>
+          <View style={styles.settingsRowLeft}>
+            <View style={styles.settingsIconContainer}>
+              <MessageCircle size={20} color="#D4AF37" strokeWidth={1.5} />
+            </View>
+            <View style={styles.settingsTextContainer}>
+              <Text style={styles.settingsTitle}>Streaming Speed</Text>
+              <Text style={styles.settingsSubtitle}>How fast messages appear</Text>
+            </View>
+          </View>
+        </View>
+        <StreamingSpeedSelector />
         
         <SettingsRow
           icon={<Bell size={20} color="#D4AF37" strokeWidth={1.5} />}
@@ -257,5 +309,55 @@ const styles = StyleSheet.create({
     color: '#A0A0A0',
     textAlign: 'center',
     lineHeight: 18,
+  },
+  settingsRowCustom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  speedSelectorContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+    gap: 8,
+  },
+  speedOption: {
+    flex: 1,
+    backgroundColor: '#F9F7F4',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  speedOptionSelected: {
+    backgroundColor: '#D4AF37',
+    borderColor: '#B8941F',
+  },
+  speedOptionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2C2C2C',
+    marginBottom: 2,
+  },
+  speedOptionLabelSelected: {
+    color: '#FFFFFF',
+  },
+  speedOptionDescription: {
+    fontSize: 11,
+    color: '#6B6B6B',
+  },
+  speedOptionDescriptionSelected: {
+    color: '#FFFFFF',
+    opacity: 0.9,
   },
 });
