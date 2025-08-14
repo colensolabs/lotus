@@ -33,7 +33,7 @@ const SUGGESTION_PROMPTS = [
 
 const getRandomSuggestions = (count: number = 3): string[] => {
   const shuffled = [...SUGGESTION_PROMPTS].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, count);
+  return shuffled.slice(0, 2);
 };
 interface Message {
   id: string;
@@ -66,7 +66,7 @@ export default function ChatScreen() {
 
   useEffect(() => {
     // Generate random suggestions on component mount
-    setSuggestions(getRandomSuggestions(3));
+    setSuggestions(getRandomSuggestions(2));
   }, []);
 
   useEffect(() => {
