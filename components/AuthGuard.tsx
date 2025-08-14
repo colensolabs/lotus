@@ -12,8 +12,10 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const { user, loading } = useAuth();
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.replace('/(auth)/login');
+    if (!loading) {
+      if (!user) {
+        router.replace('/(auth)/login');
+      }
     }
   }, [user, loading]);
 
@@ -23,10 +25,6 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
         <ActivityIndicator size="large" color="#D4AF37" />
       </View>
     );
-  }
-
-  if (!user) {
-    return null; // Will redirect to login
   }
 
   return <>{children}</>;
