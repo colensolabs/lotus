@@ -46,7 +46,9 @@ export class BuddhistGuidanceAPI {
           messages: [
             {
               role: 'system',
-              content: 'You are a compassionate Buddhist counselor providing guidance rooted in authentic Buddhist teachings. Always respond with structured advice in the exact format requested.'
+              content: isFollowUp 
+                ? 'You are a compassionate Buddhist counselor. Respond naturally and conversationally to continue the dialogue. Keep responses warm, supportive, and grounded in Buddhist wisdom without formal structure.'
+                : 'You are a compassionate Buddhist counselor providing guidance rooted in authentic Buddhist teachings. Always respond with structured advice in the exact format requested.'
             },
             {
               role: 'user',
@@ -268,22 +270,5 @@ Respond naturally without any special formatting or sections.
 const apiInstance = new BuddhistGuidanceAPI();
 
 export const getBuddhistGuidance = async (message: string, isFollowUp: boolean = false): Promise<BuddhistGuidanceResponse> => {
-  if (isFollowUp) {
-    // Return hardcoded follow-up response
-    return {
-      intro: '',
-      practicalSteps: '',
-      reflection: '',
-      scripture: {
-        text: '',
-        source: '',
-        explanation: ''
-      },
-      outro: '',
-      isFollowUp: true,
-      simpleResponse: 'this is a follow up'
-    };
-  }
-  
   return apiInstance.getBuddhistGuidance(message, isFollowUp);
 };
