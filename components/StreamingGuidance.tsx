@@ -169,7 +169,7 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
             activeOpacity={0.7}
           >
             <Square size={16} color="#FFFFFF" strokeWidth={2} />
-            <Text style={styles.stopButtonText}>Stop</Text>
+            <Text style={styles.stopButtonText}>Show</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -299,16 +299,16 @@ const styles = StyleSheet.create({
   stopButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#8B9DC3',
+    backgroundColor: '#D4AF37',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
-    shadowColor: '#8B9DC3',
+    shadowColor: '#D4AF37',
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 3,
   },
