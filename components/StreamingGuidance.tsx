@@ -174,22 +174,6 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
       )}
 
       {/* Outro Section */}
-      {(currentSection === 'outro' || currentSection === 'complete' || isCancelled) && (
-        <View style={styles.outroContainer}>
-          {currentSection === 'outro' && !isCancelled ? (
-            <StreamingText
-              text={guidance.outro}
-              speed={speed}
-              onComplete={handleSectionComplete}
-              isCancelled={isCancelled}
-              hapticsEnabled={hapticsEnabled}
-              style={styles.outroText}
-            />
-          ) : (
-            <Text style={styles.outroText}>{guidance.outro}</Text>
-          )}
-        </View>
-      )}
 
       {/* Control Buttons */}
       <View style={styles.controlsContainer}>
