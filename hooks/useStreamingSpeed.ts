@@ -5,7 +5,7 @@ export type StreamingSpeed = 'slow' | 'normal' | 'fast';
 
 const SPEED_MAP: Record<StreamingSpeed, number> = {
   slow: 15,
-  normal: 25,
+  normal: 30,
   fast: 50,
 };
 

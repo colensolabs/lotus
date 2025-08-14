@@ -1,19 +1,21 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 'react-native';
 import { Image } from 'react-native';
 import { useState, useEffect } from 'react';
-import { Bot as Lotus, Moon, Bell, Heart, MessageCircle, CircleHelp as HelpCircle, Star } from 'lucide-react-native';
+import { Bot as Lotus, Bell, Heart, MessageCircle, CircleHelp as HelpCircle, Star, Vibrate } from 'lucide-react-native';
 import { useStreamingSpeed, StreamingSpeed } from '@/hooks/useStreamingSpeed';
+import { useHapticSettings } from '@/hooks/useHapticSettings';
+import { triggerSelectionHaptic } from '@/utils/haptics';
 
 export default function SettingsScreen() {
   const { speed, updateSpeed } = useStreamingSpeed();
+  const { isEnabled: hapticsEnabled, updateSetting: updateHaptics } = useHapticSettings();
   const [notifications, setNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
   const [saveConversations, setSaveConversations] = useState(false);
 
   const StreamingSpeedSelector = () => {
     const speeds: { value: StreamingSpeed; label: string; description: string }[] = [
       { value: 'slow', label: 'Slow', description: '~15 chars/sec' },
-      { value: 'normal', label: 'Normal', description: '~25 chars/sec' },
+      { value: 'normal', label: 'Normal', description: '~30 chars/sec' },
       { value: 'fast', label: 'Fast', description: '~50 chars/sec' },
     ];
 
@@ -29,6 +31,7 @@ export default function SettingsScreen() {
             onPress={() => updateSpeed(speedOption.value)}
             activeOpacity={0.7}
           >
+            {speed === speedOption.value && triggerSelectionHaptic()}
             <Text style={[
               styles.speedOptionLabel,
               speed === speedOption.value && styles.speedOptionLabelSelected
@@ -111,6 +114,24 @@ export default function SettingsScreen() {
         <StreamingSpeedSelector />
         
         <SettingsRow
+          icon={<Vibrate size={20} color="#D4AF37" strokeWidth={1.5} />}
+          title="Haptic Feedback"
+          subtitle="Feel the typewriter effect"
+          rightElement={
+            <Switch
+              value={hapticsEnabled}
+              onValueChange={(value) => {
+                updateHaptics(value);
+                if (value) triggerSelectionHaptic();
+              }}
+              trackColor={{ false: '#E8E8E8', true: '#D4AF37' }}
+              thumbColor="#FEFEFE"
+            />
+          }
+          showArrow={false}
+        />
+        
+        <SettingsRow
           icon={<Bell size={20} color="#D4AF37" strokeWidth={1.5} />}
           title="Notifications"
           subtitle="Daily wisdom and reminders"
@@ -118,21 +139,6 @@ export default function SettingsScreen() {
             <Switch
               value={notifications}
               onValueChange={setNotifications}
-              trackColor={{ false: '#E8E8E8', true: '#D4AF37' }}
-              thumbColor="#FEFEFE"
-            />
-          }
-          showArrow={false}
-        />
-
-        <SettingsRow
-          icon={<Moon size={20} color="#D4AF37" strokeWidth={1.5} />}
-          title="Dark Mode"
-          subtitle="Easier on the eyes"
-          rightElement={
-            <Switch
-              value={darkMode}
-              onValueChange={setDarkMode}
               trackColor={{ false: '#E8E8E8', true: '#D4AF37' }}
               thumbColor="#FEFEFE"
             />
