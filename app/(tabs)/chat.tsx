@@ -20,15 +20,15 @@ import { TypingIndicator } from '@/components/TypingIndicator';
 import { useStreamingSpeed } from '@/hooks/useStreamingSpeed';
 
 const SUGGESTION_PROMPTS = [
-  "How can I improve my relationships?",
-  "What makes healthy friendships?",
-  "How to handle disagreements?",
-  "When someone hurts me?",
-  "Supporting someone in pain?",
-  "The role of forgiveness?",
-  "Balancing my needs with others?",
-  "Building deeper connections?",
-  "Healing after conflict?"
+"How can I handle disagreements calmly and respectfully?",
+"How can I deepen empathy and understanding in my relationships?",
+"How can I be more present in conversations?",
+"What can I do when someone close hurts me?",
+"How can I support someone in a tough time?",
+"What role does forgiveness play in healthy relationships?",
+"How do I balance my needs with those I care about?",
+"What habits build more meaningful connections?",
+"How can I heal after conflict or disappointment?",
 ];
 
 const getRandomSuggestions = (count: number = 3): string[] => {
