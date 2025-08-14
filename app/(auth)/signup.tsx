@@ -57,7 +57,24 @@ export default function SignUpScreen() {
     const { error } = await signUp(email.trim(), password, displayName.trim());
 
     if (error) {
-      Alert.alert('Sign Up Failed', error.message);
+      if (error.message.includes('User already registered') || error.message.includes('user_already_exists')) {
+        Alert.alert(
+          'Account Already Exists',
+          'An account with this email address already exists. Would you like to sign in instead?',
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel',
+            },
+            {
+              text: 'Sign In',
+              onPress: () => router.push('/(auth)/login'),
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Sign Up Failed', error.message);
+      }
     } else {
       Alert.alert(
         'Success!',
