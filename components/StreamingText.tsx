@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Text, View, StyleSheet } from 'react-native';
+import { Text, View, StyleSheet, Platform } from 'react-native';
 import { triggerTypewriterHaptic } from '@/utils/haptics';
 
 interface StreamingTextProps {
@@ -27,12 +27,20 @@ export const StreamingText: React.FC<StreamingTextProps> = ({
   const currentIndexRef = useRef(0);
   const hapticCounterRef = useRef(0);
 
+  // Format text with bullet points for better display
+  const formatText = (text: string) => {
+    return text
+      .replace(/^•\s*/gm, '• ')
+      .replace(/^\*\s*/gm, '• ')
+      .replace(/^\d+\.\s*/gm, '• ');
+  };
+
   useEffect(() => {
     if (isCancelled) {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
-      setDisplayedText(text);
+      setDisplayedText(formatText(text));
       setIsComplete(true);
       onComplete?.();
       return;
@@ -43,18 +51,19 @@ export const StreamingText: React.FC<StreamingTextProps> = ({
     currentIndexRef.current = 0;
     hapticCounterRef.current = 0;
 
+    const formattedText = formatText(text);
     const intervalMs = 1000 / speed;
 
     intervalRef.current = setInterval(() => {
-      if (currentIndexRef.current >= text.length) {
+      if (currentIndexRef.current >= formattedText.length) {
         clearInterval(intervalRef.current!);
         setIsComplete(true);
         onComplete?.();
         return;
       }
 
-      const currentChar = text[currentIndexRef.current];
-      const nextText = text.substring(0, currentIndexRef.current + 1);
+      const currentChar = formattedText[currentIndexRef.current];
+      const nextText = formattedText.substring(0, currentIndexRef.current + 1);
       
       setDisplayedText(nextText);
       currentIndexRef.current++;
@@ -71,16 +80,16 @@ export const StreamingText: React.FC<StreamingTextProps> = ({
       if (currentChar === '.' || currentChar === '!' || currentChar === '?') {
         clearInterval(intervalRef.current!);
         setTimeout(() => {
-          if (!isCancelled && currentIndexRef.current < text.length) {
+          if (!isCancelled && currentIndexRef.current < formattedText.length) {
             intervalRef.current = setInterval(() => {
-              if (currentIndexRef.current >= text.length) {
+              if (currentIndexRef.current >= formattedText.length) {
                 clearInterval(intervalRef.current!);
                 setIsComplete(true);
                 onComplete?.();
                 return;
               }
 
-              const nextText = text.substring(0, currentIndexRef.current + 1);
+              const nextText = formattedText.substring(0, currentIndexRef.current + 1);
               setDisplayedText(nextText);
               currentIndexRef.current++;
               

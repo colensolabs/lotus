@@ -100,14 +100,16 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
         <View style={styles.practicalStepsCard}>
           <Text style={styles.sectionTitle}>Practical Steps</Text>
           {currentSection === 'steps' && !isCancelled ? (
-            <StreamingText
-              text={guidance.practicalSteps}
-              speed={speed}
-              onComplete={handleSectionComplete}
-              isCancelled={isCancelled}
-              hapticsEnabled={hapticsEnabled}
-              style={styles.stepsText}
-            />
+            <View style={styles.stepsContainer}>
+              <StreamingText
+                text={guidance.practicalSteps}
+                speed={speed}
+                onComplete={handleSectionComplete}
+                isCancelled={isCancelled}
+                hapticsEnabled={hapticsEnabled}
+                style={styles.stepsText}
+              />
+            </View>
           ) : (
             renderSteps()
           )}
