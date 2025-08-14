@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { StreamingText } from './StreamingText';
 import { Square } from 'lucide-react-native';
+import { useHapticSettings } from '@/hooks/useHapticSettings';
 
 interface StreamingGuidanceProps {
   guidance: {
@@ -26,6 +27,7 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
   const [currentSection, setCurrentSection] = useState<'intro' | 'steps' | 'reflection' | 'scripture' | 'explanation' | 'complete'>('intro');
   const [isCancelled, setIsCancelled] = useState(false);
   const [showStopButton, setShowStopButton] = useState(true);
+  const { isEnabled: hapticsEnabled } = useHapticSettings();
 
   const handleSectionComplete = () => {
     if (isCancelled) return;
@@ -82,6 +84,7 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
         speed={speed}
         onComplete={handleSectionComplete}
         isCancelled={isCancelled}
+        hapticsEnabled={hapticsEnabled}
         style={styles.introText}
       />
 
@@ -95,6 +98,7 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
               speed={speed}
               onComplete={handleSectionComplete}
               isCancelled={isCancelled}
+              hapticsEnabled={hapticsEnabled}
               style={styles.stepsText}
             />
           ) : (
@@ -113,6 +117,7 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
               speed={speed}
               onComplete={handleSectionComplete}
               isCancelled={isCancelled}
+              hapticsEnabled={hapticsEnabled}
               style={styles.sectionText}
             />
           ) : (
@@ -131,6 +136,7 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
               speed={speed}
               onComplete={handleSectionComplete}
               isCancelled={isCancelled}
+              hapticsEnabled={hapticsEnabled}
               style={styles.scriptureText}
             />
           ) : (
@@ -152,6 +158,7 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
               speed={speed}
               onComplete={handleSectionComplete}
               isCancelled={isCancelled}
+              hapticsEnabled={hapticsEnabled}
               style={styles.explanationText}
             />
           ) : (

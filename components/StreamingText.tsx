@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Text, View, StyleSheet } from 'react-native';
+import { triggerTypewriterHaptic } from '@/utils/haptics';
 
 interface StreamingTextProps {
   text: string;
@@ -7,6 +8,7 @@ interface StreamingTextProps {
   onComplete?: () => void;
   onCancel?: () => void;
   isCancelled?: boolean;
+  hapticsEnabled?: boolean;
   style?: any;
 }
 
@@ -16,12 +18,14 @@ export const StreamingText: React.FC<StreamingTextProps> = ({
   onComplete,
   onCancel,
   isCancelled = false,
+  hapticsEnabled = false,
   style,
 }) => {
   const [displayedText, setDisplayedText] = useState('');
   const [isComplete, setIsComplete] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const currentIndexRef = useRef(0);
+  const hapticCounterRef = useRef(0);
 
   useEffect(() => {
     if (isCancelled) {
@@ -37,6 +41,7 @@ export const StreamingText: React.FC<StreamingTextProps> = ({
     setDisplayedText('');
     setIsComplete(false);
     currentIndexRef.current = 0;
+    hapticCounterRef.current = 0;
 
     const intervalMs = 1000 / speed;
 
@@ -53,6 +58,14 @@ export const StreamingText: React.FC<StreamingTextProps> = ({
       
       setDisplayedText(nextText);
       currentIndexRef.current++;
+      
+      // Trigger haptic feedback every few characters to avoid overwhelming
+      if (hapticsEnabled) {
+        hapticCounterRef.current++;
+        if (hapticCounterRef.current % 3 === 0) { // Every 3rd character
+          triggerTypewriterHaptic();
+        }
+      }
 
       // Add pause after sentence endings
       if (currentChar === '.' || currentChar === '!' || currentChar === '?') {
@@ -70,6 +83,13 @@ export const StreamingText: React.FC<StreamingTextProps> = ({
               const nextText = text.substring(0, currentIndexRef.current + 1);
               setDisplayedText(nextText);
               currentIndexRef.current++;
+              
+              if (hapticsEnabled) {
+                hapticCounterRef.current++;
+                if (hapticCounterRef.current % 3 === 0) {
+                  triggerTypewriterHaptic();
+                }
+              }
             }, intervalMs);
           }
         }, Math.random() * 100 + 150); // 150-250ms pause
@@ -81,7 +101,7 @@ export const StreamingText: React.FC<StreamingTextProps> = ({
         clearInterval(intervalRef.current);
       }
     };
-  }, [text, speed, isCancelled]);
+  }, [text, speed, isCancelled, hapticsEnabled]);
 
   return (
     <Text style={style}>
