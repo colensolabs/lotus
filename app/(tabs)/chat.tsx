@@ -161,7 +161,7 @@ export default function ChatScreen() {
       <KeyboardAvoidingView
         style={styles.keyboardContainer} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         <View style={styles.header}>
           <View style={styles.headerLogoContainer}>
@@ -194,7 +194,7 @@ export default function ChatScreen() {
           )}
         </ScrollView>
 
-        <View style={[styles.inputContainer, { paddingBottom: Platform.OS === 'ios' ? 34 : 12 }]}>
+        <View style={[styles.inputContainer, Platform.OS === 'ios' && styles.inputContainerIOS]}>
           <TextInput
             style={styles.textInput}
             value={inputText}
@@ -381,6 +381,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  inputContainerIOS: {
+    paddingBottom: 34,
   },
   textInput: {
     flex: 1,
