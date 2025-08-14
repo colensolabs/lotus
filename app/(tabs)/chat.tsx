@@ -16,6 +16,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { Send, User, Bot as Lotus, MessageSquare } from 'lucide-react-native';
 import { getBuddhistGuidance } from '@/components/ApiClient';
 import { StreamingGuidance } from '@/components/StreamingGuidance';
+import { StreamingText } from '@/components/StreamingText';
 import { TypingIndicator } from '@/components/TypingIndicator';
 import { useStreamingSpeed } from '@/hooks/useStreamingSpeed';
 
