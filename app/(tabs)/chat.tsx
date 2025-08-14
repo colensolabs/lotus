@@ -149,7 +149,6 @@ export default function ChatScreen() {
             <StreamingGuidance
               guidance={message.guidance}
               speed={speedValue}
-              onRetry={() => handleRetry(message.id)}
             />
           )}
         </View>

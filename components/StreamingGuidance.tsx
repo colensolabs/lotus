@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { StreamingText } from './StreamingText';
-import { Square, RotateCcw } from 'lucide-react-native';
+import { Square } from 'lucide-react-native';
 
 interface StreamingGuidanceProps {
   guidance: {
@@ -53,13 +53,6 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
   const handleStop = () => {
     setIsCancelled(true);
     setShowStopButton(false);
-  };
-
-  const handleRetry = () => {
-    setCurrentSection('intro');
-    setIsCancelled(false);
-    setShowStopButton(true);
-    onRetry?.();
   };
 
   const renderSteps = () => {
@@ -177,17 +170,6 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
           >
             <Square size={16} color="#FFFFFF" strokeWidth={2} />
             <Text style={styles.stopButtonText}>Stop</Text>
-          </TouchableOpacity>
-        )}
-        
-        {(isCancelled || currentSection === 'complete') && (
-          <TouchableOpacity
-            style={styles.retryButton}
-            onPress={handleRetry}
-            activeOpacity={0.7}
-          >
-            <RotateCcw size={16} color="#D4AF37" strokeWidth={2} />
-            <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -332,22 +314,6 @@ const styles = StyleSheet.create({
   },
   stopButtonText: {
     color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
-    marginLeft: 4,
-  },
-  retryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#D4AF37',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  retryButtonText: {
-    color: '#D4AF37',
     fontSize: 12,
     fontWeight: '600',
     marginLeft: 4,
