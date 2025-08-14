@@ -12,7 +12,6 @@ import {
   Alert,
   Image,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { Send, User, Bot as Lotus, MessageSquare } from 'lucide-react-native';
 import { getBuddhistGuidance } from '@/components/ApiClient';
@@ -157,11 +156,10 @@ export default function ChatScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <KeyboardAvoidingView
         style={styles.keyboardContainer} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         <View style={styles.header}>
           <View style={styles.headerLogoContainer}>
@@ -222,7 +220,7 @@ export default function ChatScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -230,6 +228,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F1E8',
+    paddingTop: Platform.OS === 'ios' ? 50 : 0,
   },
   keyboardContainer: {
     flex: 1,
@@ -370,6 +369,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingHorizontal: 16,
     paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 12,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E8E8E8',
@@ -381,9 +381,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-  },
-  inputContainerIOS: {
-    paddingBottom: 34,
   },
   textInput: {
     flex: 1,
