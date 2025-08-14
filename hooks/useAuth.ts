@@ -43,13 +43,12 @@ export const useAuth = () => {
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
-        .eq('id', userId)
-        .single();
+        .eq('id', userId);
 
       if (error) {
         console.error('Error fetching profile:', error);
       } else {
-        setProfile(data);
+        setProfile(data && data.length > 0 ? data[0] : null);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -91,8 +90,12 @@ export const useAuth = () => {
 
     const { data, error } = await supabase
       .from('user_profiles')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', user.id)
+      .upsert({ 
+        id: user.id,
+        email: user.email || '',
+        ...updates, 
+        updated_at: new Date().toISOString() 
+      }, { onConflict: 'id' })
       .select()
       .single();
 
