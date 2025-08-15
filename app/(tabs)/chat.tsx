@@ -127,12 +127,6 @@ export default function ChatScreen() {
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: false });
       }, 100);
-    } else if (!conversationId) {
-      // Clear messages for new conversation
-      setMessages([]);
-      setConversationStarted(false);
-      setCurrentConversationId(null);
-      clearMessages();
     }
   }, [conversationId, dbMessages]);
 
