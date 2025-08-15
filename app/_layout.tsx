@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from 'expo-router';
+import { router } from 'expo-router'
+import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 
 const AUTH_STORAGE_KEY = 'user_auth_state';
 
