@@ -129,6 +129,7 @@ export default function ChatScreen() {
       }
       setCurrentConversationId(conversationIdToUse);
     }
+
     const userMessage: Message = {
       id: Date.now().toString(),
       text: messageText,
@@ -153,17 +154,9 @@ export default function ChatScreen() {
         const messageId = (Date.now() + 1).toString();
         
         let botMessage: Message;
-        let messageContent: string;
-        let guidanceData: any;
         
         if (guidance.isFollowUp && guidance.simpleResponse) {
           // Follow-up response - simple format
-          messageContent = guidance.simpleResponse;
-          guidanceData = {
-            isFollowUp: true,
-            simpleResponse: guidance.simpleResponse,
-          };
-
           botMessage = {
             id: messageId,
             text: guidance.simpleResponse,
@@ -175,12 +168,6 @@ export default function ChatScreen() {
           };
         } else {
           // Initial structured response
-          messageContent = guidance.intro;
-          guidanceData = {
-            isFollowUp: false,
-            guidance,
-          };
-
           botMessage = {
             id: messageId,
             text: guidance.intro,
@@ -196,6 +183,20 @@ export default function ChatScreen() {
         
         // Save bot message to database
         if (conversationIdToUse) {
+          const guidanceData = guidance.isFollowUp && guidance.simpleResponse 
+            ? {
+                isFollowUp: true,
+                simpleResponse: guidance.simpleResponse,
+              }
+            : {
+                isFollowUp: false,
+                guidance,
+              };
+          
+          const messageContent = guidance.isFollowUp && guidance.simpleResponse 
+            ? guidance.simpleResponse 
+            : guidance.intro;
+            
           await addMessage(messageContent, false, guidanceData);
           
           // Update conversation preview
