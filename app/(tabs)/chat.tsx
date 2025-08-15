@@ -19,6 +19,8 @@ import { StreamingGuidance } from '@/components/StreamingGuidance';
 import { StreamingText } from '@/components/StreamingText';
 import { TypingIndicator } from '@/components/TypingIndicator';
 import { useStreamingSpeed } from '@/hooks/useStreamingSpeed';
+import { useConversations } from '@/hooks/useConversations';
+import { useMessages } from '@/hooks/useMessages';
 
 const SUGGESTION_PROMPTS = [
 "How can I handle disagreements calmly and respectfully?",
@@ -58,8 +60,13 @@ interface Message {
 }
 
 export default function ChatScreen() {
-  const { initialPrompt } = useLocalSearchParams<{ initialPrompt?: string }>();
+  const { initialPrompt, conversationId } = useLocalSearchParams<{ 
+    initialPrompt?: string; 
+    conversationId?: string;
+  }>();
   const { speedValue } = useStreamingSpeed();
+  const { createConversation, updateConversation } = useConversations();
+  const { messages: dbMessages, addMessage, clearMessages } = useMessages(conversationId || null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -67,6 +74,7 @@ export default function ChatScreen() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
   const [conversationStarted, setConversationStarted] = useState(false);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(conversationId || null);
 
   useEffect(() => {
     // Generate random suggestions on component mount
@@ -74,17 +82,53 @@ export default function ChatScreen() {
   }, []);
 
   useEffect(() => {
+    // Load existing conversation messages
+    if (conversationId && dbMessages.length > 0) {
+      const loadedMessages: Message[] = dbMessages.map(msg => ({
+        id: msg.id,
+        text: msg.content,
+        isUser: msg.is_user,
+        timestamp: new Date(msg.created_at || ''),
+        isFollowUp: msg.guidance_data?.isFollowUp || false,
+        guidance: msg.guidance_data?.guidance || undefined,
+        simpleResponse: msg.guidance_data?.simpleResponse || undefined,
+      }));
+      setMessages(loadedMessages);
+      setConversationStarted(true);
+    } else if (!conversationId) {
+      // Clear messages for new conversation
+      setMessages([]);
+      setConversationStarted(false);
+      setCurrentConversationId(null);
+    }
+  }, [conversationId, dbMessages]);
+  useEffect(() => {
     if (initialPrompt && typeof initialPrompt === 'string') {
       handleSendMessage(initialPrompt);
       setConversationStarted(true);
     }
   }, [initialPrompt]);
 
-  const handleSendMessage = (text?: string) => {
+  const handleSendMessage = async (text?: string) => {
     const messageText = text || inputText.trim();
     if (!messageText) return;
     if (isLoading) return;
 
+    let conversationIdToUse = currentConversationId;
+
+    // Create new conversation if this is the first message
+    if (!conversationIdToUse) {
+      const title = messageText.length > 50 
+        ? messageText.substring(0, 50) + '...' 
+        : messageText;
+      
+      conversationIdToUse = await createConversation(title, messageText);
+      if (!conversationIdToUse) {
+        Alert.alert('Error', 'Failed to create conversation');
+        return;
+      }
+      setCurrentConversationId(conversationIdToUse);
+    }
     const userMessage: Message = {
       id: Date.now().toString(),
       text: messageText,
@@ -96,17 +140,30 @@ export default function ChatScreen() {
     setInputText('');
     setIsLoading(true);
     
+    // Save user message to database
+    if (conversationIdToUse) {
+      await addMessage(messageText, true);
+    }
+
     // Determine if this is a follow-up message
     const isFollowUp = conversationStarted && messages.length > 0;
 
     getBuddhistGuidance(messageText, isFollowUp)
-      .then((guidance) => {
+      .then(async (guidance) => {
         const messageId = (Date.now() + 1).toString();
         
         let botMessage: Message;
+        let messageContent: string;
+        let guidanceData: any;
         
         if (guidance.isFollowUp && guidance.simpleResponse) {
           // Follow-up response - simple format
+          messageContent = guidance.simpleResponse;
+          guidanceData = {
+            isFollowUp: true,
+            simpleResponse: guidance.simpleResponse,
+          };
+
           botMessage = {
             id: messageId,
             text: guidance.simpleResponse,
@@ -118,6 +175,12 @@ export default function ChatScreen() {
           };
         } else {
           // Initial structured response
+          messageContent = guidance.intro;
+          guidanceData = {
+            isFollowUp: false,
+            guidance,
+          };
+
           botMessage = {
             id: messageId,
             text: guidance.intro,
@@ -131,6 +194,17 @@ export default function ChatScreen() {
         setMessages(prev => [...prev, botMessage]);
         setStreamingMessageId(messageId);
         
+        // Save bot message to database
+        if (conversationIdToUse) {
+          await addMessage(messageContent, false, guidanceData);
+          
+          // Update conversation preview
+          await updateConversation(conversationIdToUse, {
+            preview: messageText.substring(0, 100),
+            last_message_at: new Date().toISOString(),
+          });
+        }
+
         if (!conversationStarted) {
           setConversationStarted(true);
         }
