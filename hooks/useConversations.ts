@@ -15,6 +15,9 @@ export const useConversations = () => {
   useEffect(() => {
     if (user) {
       fetchConversations();
+    } else {
+      setConversations([]);
+      setIsLoading(false);
     }
   }, [user]);
 

@@ -1,19 +1,23 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert } from 'react-native';
 import { Image } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { MessageCircle, Plus, Trash2, Clock, Pin } from 'lucide-react-native';
 import { useConversations } from '@/hooks/useConversations';
 
 export default function ConversationsScreen() {
   const { conversations, isLoading, fetchConversations, deleteConversation } = useConversations();
   const [refreshing, setRefreshing] = useState(false);
+  const hasInitiallyFetched = useRef(false);
 
   // Refresh conversations every time the screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      fetchConversations();
-    }, [fetchConversations])
+      if (!hasInitiallyFetched.current) {
+        fetchConversations();
+        hasInitiallyFetched.current = true;
+      }
+    }, [])
   );
 
   const handleRefresh = async () => {
