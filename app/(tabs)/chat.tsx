@@ -107,6 +107,16 @@ export default function ChatScreen() {
     }
   }, [conversationId, initialPrompt, hasProcessedInitialSetup]);
 
+  // Reset when navigating to a new conversation (no conversationId)
+  useEffect(() => {
+    if (!conversationId && hasProcessedInitialSetup) {
+      setCurrentConversationId(null);
+      setMessages([]);
+      setConversationStarted(false);
+      setSuggestions(getRandomSuggestions(2));
+    }
+  }, [conversationId, initialPrompt, hasProcessedInitialSetup]);
+
   // Separate effect for loading messages when conversationId changes
   useEffect(() => {
     if (conversationId && dbMessages.length > 0) {
