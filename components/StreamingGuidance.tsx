@@ -18,20 +18,22 @@ interface StreamingGuidanceProps {
   };
   speed: number;
   onRetry?: () => void;
+  isCancelled?: boolean;
 }
 
 export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
   guidance,
   speed,
   onRetry,
+  isCancelled = false,
 }) => {
-  const [currentSection, setCurrentSection] = useState<'intro' | 'steps' | 'reflection' | 'scripture' | 'explanation' | 'complete'>('intro');
-  const [isCancelled, setIsCancelled] = useState(false);
+  const [currentSection, setCurrentSection] = useState<'intro' | 'steps' | 'reflection' | 'scripture' | 'explanation' | 'complete'>(isCancelled ? 'complete' : 'intro');
+  const [isStreamingCancelled, setIsStreamingCancelled] = useState(isCancelled);
   const [showStopButton, setShowStopButton] = useState(true);
   const { isEnabled: hapticsEnabled } = useHapticSettings();
 
   const handleSectionComplete = () => {
-    if (isCancelled) return;
+    if (isStreamingCancelled) return;
 
     switch (currentSection) {
       case 'intro':
@@ -60,7 +62,7 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
   };
 
   const handleStop = () => {
-    setIsCancelled(true);
+    setIsStreamingCancelled(true);
     setShowStopButton(false);
   };
 
@@ -90,7 +92,7 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
         text={guidance.intro}
         speed={speed}
         onComplete={handleSectionComplete}
-        isCancelled={isCancelled}
+        isCancelled={isStreamingCancelled}
         hapticsEnabled={hapticsEnabled}
         style={styles.introText}
       />
@@ -105,7 +107,7 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
                 text={guidance.practicalSteps}
                 speed={speed}
                 onComplete={handleSectionComplete}
-                isCancelled={isCancelled}
+                isCancelled={isStreamingCancelled}
                 hapticsEnabled={hapticsEnabled}
                 style={styles.stepsText}
               />
@@ -120,12 +122,12 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
       {(currentSection === 'reflection' || currentSection === 'scripture' || currentSection === 'explanation' || currentSection === 'complete' || isCancelled) && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Reflection</Text>
-          {currentSection === 'reflection' && !isCancelled ? (
+          {currentSection === 'reflection' && !isStreamingCancelled ? (
             <StreamingText
               text={guidance.reflection}
               speed={speed}
               onComplete={handleSectionComplete}
-              isCancelled={isCancelled}
+              isCancelled={isStreamingCancelled}
               hapticsEnabled={hapticsEnabled}
               style={styles.sectionText}
             />
@@ -136,15 +138,15 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
       )}
 
       {/* Scripture Section */}
-      {(currentSection === 'scripture' || currentSection === 'explanation' || currentSection === 'complete' || isCancelled) && (
+      {(currentSection === 'scripture' || currentSection === 'explanation' || currentSection === 'complete' || isStreamingCancelled) && (
         <View style={styles.scriptureSection}>
           <Text style={styles.sectionTitle}>Buddhist Teaching</Text>
-          {currentSection === 'scripture' && !isCancelled ? (
+          {currentSection === 'scripture' && !isStreamingCancelled ? (
             <StreamingText
               text={`"${guidance.scripture.text}"\n\n— ${guidance.scripture.source}`}
               speed={speed}
               onComplete={handleSectionComplete}
-              isCancelled={isCancelled}
+              isCancelled={isStreamingCancelled}
               hapticsEnabled={hapticsEnabled}
               style={styles.scriptureText}
             />
@@ -158,15 +160,15 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
       )}
 
       {/* Explanation Section */}
-      {(currentSection === 'explanation' || currentSection === 'outro' || currentSection === 'complete' || isCancelled) && (
+      {(currentSection === 'explanation' || currentSection === 'outro' || currentSection === 'complete' || isStreamingCancelled) && (
         <View style={styles.explanationSection}>
           <Text style={styles.explanationTitle}>Understanding the Teaching</Text>
-          {currentSection === 'explanation' && !isCancelled ? (
+          {currentSection === 'explanation' && !isStreamingCancelled ? (
             <StreamingText
               text={guidance.scripture.explanation}
               speed={speed}
               onComplete={handleSectionComplete}
-              isCancelled={isCancelled}
+              isCancelled={isStreamingCancelled}
               hapticsEnabled={hapticsEnabled}
               style={styles.explanationText}
             />
@@ -177,14 +179,14 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
       )}
 
       {/* Outro Section */}
-      {(currentSection === 'outro' || currentSection === 'complete' || isCancelled) && guidance.outro && (
+      {(currentSection === 'outro' || currentSection === 'complete' || isStreamingCancelled) && guidance.outro && (
         <View style={styles.outroContainer}>
-          {currentSection === 'outro' && !isCancelled ? (
+          {currentSection === 'outro' && !isStreamingCancelled ? (
             <StreamingText
               text={guidance.outro}
               speed={speed}
               onComplete={handleSectionComplete}
-              isCancelled={isCancelled}
+              isCancelled={isStreamingCancelled}
               hapticsEnabled={hapticsEnabled}
               style={styles.outroText}
             />

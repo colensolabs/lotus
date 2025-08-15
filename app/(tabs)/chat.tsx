@@ -19,6 +19,8 @@ import { StreamingGuidance } from '@/components/StreamingGuidance';
 import { StreamingText } from '@/components/StreamingText';
 import { TypingIndicator } from '@/components/TypingIndicator';
 import { useStreamingSpeed } from '@/hooks/useStreamingSpeed';
+import { useConversations } from '@/hooks/useConversations';
+import { useMessages } from '@/hooks/useMessages';
 
 const SUGGESTION_PROMPTS = [
 "How can I handle disagreements calmly and respectfully?",
@@ -58,8 +60,13 @@ interface Message {
 }
 
 export default function ChatScreen() {
-  const { initialPrompt } = useLocalSearchParams<{ initialPrompt?: string }>();
+  const { initialPrompt, conversationId } = useLocalSearchParams<{ 
+    initialPrompt?: string; 
+    conversationId?: string;
+  }>();
   const { speedValue } = useStreamingSpeed();
+  const { createConversation, updateConversation } = useConversations();
+  const { messages: dbMessages, addMessageToConversation, clearMessages } = useMessages(conversationId || null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -67,6 +74,10 @@ export default function ChatScreen() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
   const [conversationStarted, setConversationStarted] = useState(false);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(conversationId || null);
+
+  // Track if we've processed the initial setup
+  const [hasProcessedInitialSetup, setHasProcessedInitialSetup] = useState(false);
 
   useEffect(() => {
     // Generate random suggestions on component mount
@@ -74,16 +85,113 @@ export default function ChatScreen() {
   }, []);
 
   useEffect(() => {
-    if (initialPrompt && typeof initialPrompt === 'string') {
-      handleSendMessage(initialPrompt);
-      setConversationStarted(true);
+    if (!hasProcessedInitialSetup) {
+      if (conversationId) {
+        // This is an existing conversation
+        setCurrentConversationId(conversationId);
+        setConversationStarted(true);
+      } else if (initialPrompt && typeof initialPrompt === 'string') {
+        // This is a new conversation with an initial prompt
+        setCurrentConversationId(null);
+        setMessages([]);
+        setConversationStarted(false);
+        console.log('Initial prompt disabled:', initialPrompt);
+        setConversationStarted(true);
+      } else {
+        // This is a completely new conversation with no initial prompt
+        setCurrentConversationId(null);
+        setMessages([]);
+        setConversationStarted(false);
+      }
+      setHasProcessedInitialSetup(true);
     }
-  }, [initialPrompt]);
+  }, [conversationId, initialPrompt, hasProcessedInitialSetup]);
 
-  const handleSendMessage = (text?: string) => {
+  // Reset when navigating to a new conversation (no conversationId)
+  useEffect(() => {
+    if (!conversationId && hasProcessedInitialSetup) {
+      setCurrentConversationId(null);
+      setMessages([]);
+      setConversationStarted(false);
+      setSuggestions(getRandomSuggestions(2));
+    }
+  }, [conversationId, initialPrompt, hasProcessedInitialSetup]);
+
+  // Separate effect for loading messages when conversationId changes
+  useEffect(() => {
+    if (conversationId && dbMessages.length > 0) {
+      const loadedMessages: Message[] = dbMessages.map(msg => ({
+        id: msg.id,
+        text: msg.content,
+        isUser: msg.is_user,
+        timestamp: new Date(msg.created_at || ''),
+        isFollowUp: msg.guidance_data?.isFollowUp || false,
+        guidance: msg.guidance_data?.guidance || undefined,
+        simpleResponse: msg.guidance_data?.simpleResponse || undefined,
+        isStreaming: false,
+        isCancelled: true, // This ensures no streaming animation for historical messages
+      }));
+      setMessages(loadedMessages);
+      
+      // Scroll to bottom when loading conversation history
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: false });
+      }, 100);
+    }
+  }, [conversationId, dbMessages]);
+
+  // Remove the old effects completely
+  /*
+  useEffect(() => {
+    // Load existing conversation messages
+    if (conversationId && dbMessages.length > 0) {
+      const loadedMessages: Message[] = dbMessages.map(msg => ({
+        id: msg.id,
+        text: msg.content,
+        isUser: msg.is_user,
+        timestamp: new Date(msg.created_at || ''),
+        isFollowUp: msg.guidance_data?.isFollowUp || false,
+        guidance: msg.guidance_data?.guidance || undefined,
+        simpleResponse: msg.guidance_data?.simpleResponse || undefined,
+        isStreaming: false,
+        isCancelled: false,
+      }));
+      setMessages(loadedMessages);
+      setConversationStarted(true);
+      
+      // Scroll to bottom when loading conversation history
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: false });
+      }, 100);
+    } else if (!conversationId) {
+      // Clear messages for new conversation
+      setMessages([]);
+      setConversationStarted(false);
+      setCurrentConversationId(null);
+    }
+  }, [conversationId, dbMessages]);
+  */
+
+  const handleSendMessage = async (text?: string) => {
     const messageText = text || inputText.trim();
     if (!messageText) return;
     if (isLoading) return;
+
+    let conversationIdToUse = currentConversationId || conversationId;
+
+    // Create new conversation if this is the first message
+    if (!conversationIdToUse) {
+      const title = messageText.length > 50 
+        ? messageText.substring(0, 50) + '...' 
+        : messageText;
+      
+      conversationIdToUse = await createConversation(title, messageText);
+      if (!conversationIdToUse) {
+        Alert.alert('Error', 'Failed to create conversation');
+        return;
+      }
+      setCurrentConversationId(conversationIdToUse);
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -96,55 +204,102 @@ export default function ChatScreen() {
     setInputText('');
     setIsLoading(true);
     
+    // Save user message to database immediately
+    try {
+      if (conversationIdToUse) {
+        const savedUserMessage = await addMessageToConversation(conversationIdToUse, messageText, true);
+        console.log('User message saved successfully');
+      }
+    } catch (error) {
+      console.error('Failed to save user message:', error);
+    }
+
     // Determine if this is a follow-up message
     const isFollowUp = conversationStarted && messages.length > 0;
 
-    getBuddhistGuidance(messageText, isFollowUp)
-      .then((guidance) => {
-        const messageId = (Date.now() + 1).toString();
-        
-        let botMessage: Message;
-        
-        if (guidance.isFollowUp && guidance.simpleResponse) {
-          // Follow-up response - simple format
-          botMessage = {
-            id: messageId,
-            text: guidance.simpleResponse,
-            isUser: false,
-            timestamp: new Date(),
-            isStreaming: true,
-            isFollowUp: true,
-            simpleResponse: guidance.simpleResponse,
-          };
-        } else {
-          // Initial structured response
-          botMessage = {
-            id: messageId,
-            text: guidance.intro,
-            isUser: false,
-            timestamp: new Date(),
-            isStreaming: true,
-            guidance,
-          };
+    try {
+      const guidance = await getBuddhistGuidance(messageText, isFollowUp);
+      
+      const messageId = (Date.now() + 1).toString();
+      
+      let botMessage: Message;
+      
+      if (guidance.isFollowUp && guidance.simpleResponse) {
+        // Follow-up response - simple format
+        botMessage = {
+          id: messageId,
+          text: guidance.simpleResponse,
+          isUser: false,
+          timestamp: new Date(),
+          isStreaming: true,
+          isFollowUp: true,
+          simpleResponse: guidance.simpleResponse,
+        };
+      } else {
+        // Initial structured response
+        botMessage = {
+          id: messageId,
+          text: guidance.intro,
+          isUser: false,
+          timestamp: new Date(),
+          isStreaming: true,
+          guidance,
+        };
+      }
+      
+      setMessages(prev => [...prev, botMessage]);
+      setStreamingMessageId(messageId);
+      
+      // Save bot message to database
+      try {
+        if (conversationIdToUse) {
+          const guidanceData = guidance.isFollowUp && guidance.simpleResponse 
+            ? {
+                isFollowUp: true,
+                simpleResponse: guidance.simpleResponse,
+              }
+            : {
+                isFollowUp: false,
+                guidance,
+              };
+          
+          const messageContent = guidance.isFollowUp && guidance.simpleResponse 
+            ? guidance.simpleResponse 
+            : guidance.intro;
+            
+          const savedBotMessage = await addMessageToConversation(conversationIdToUse, messageContent, false, guidanceData);
+          if (savedBotMessage) {
+            console.log('Bot message saved successfully:', savedBotMessage.id);
+          } else {
+            console.log('Bot message returned null - check database constraints');
+          }
+          
+          // Update conversation preview and stats
+          await updateConversation(conversationIdToUse, {
+            preview: messageText.substring(0, 100),
+            last_message_at: new Date().toISOString(),
+          });
         }
-        
-        setMessages(prev => [...prev, botMessage]);
-        setStreamingMessageId(messageId);
-        
-        if (!conversationStarted) {
-          setConversationStarted(true);
-        }
-      })
-      .catch((error) => {
-        console.error('API Error:', error);
-        Alert.alert(
-          'Error',
-          'Failed to get guidance. Please try again.'
-        );
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
+      } catch (error) {
+        console.error('Failed to save bot message:', error);
+        console.error('Bot message save error details:', error);
+      }
+
+      if (!conversationStarted) {
+        setConversationStarted(true);
+      }
+    } catch (error) {
+      console.error('API Error:', error);
+      Alert.alert(
+        'Error',
+        'Failed to get guidance. Please try again.'
+      );
+      
+      // Remove the user message from UI if API call failed
+      setMessages(prev => prev.slice(0, -1));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleStreamingComplete = (messageId: string) => {
@@ -255,6 +410,7 @@ export default function ChatScreen() {
             <StreamingGuidance
               guidance={message.guidance}
               speed={speedValue}
+              isCancelled={message.isCancelled}
             />
           )}
         </View>
@@ -272,7 +428,9 @@ export default function ChatScreen() {
           <View style={styles.headerLogoContainer}>
             <Image source={require('../../assets/images/logo2.jpg')} style={styles.headerLogoImage} />
           </View>
-          <Text style={styles.headerTitle}>Lotus Guide</Text>
+          <Text style={styles.headerTitle}>
+            {conversationId ? 'Continue Chat' : 'Lotus Guide'}
+          </Text>
         </View>
 
         <ScrollView
@@ -518,6 +676,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  inputContainerIOS: {},
   textInput: {
     flex: 1,
     borderWidth: 1,
@@ -591,5 +750,121 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     marginLeft: 4,
+  },
+  introText: {
+    fontSize: 16,
+    color: '#2C2C2C',
+    lineHeight: 24,
+    fontStyle: 'italic',
+    marginBottom: 16,
+  },
+  section: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#D4AF37',
+    marginBottom: 8,
+    letterSpacing: 0.2,
+  },
+  sectionText: {
+    fontSize: 15,
+    color: '#2C2C2C',
+    lineHeight: 24,
+  },
+  practicalStepsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 18,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  stepsContainer: {
+    marginTop: 4,
+  },
+  stepItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 14,
+  },
+  stepNumber: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#D4AF37',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    marginTop: 2,
+    flexShrink: 0,
+  },
+  stepNumberText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  stepText: {
+    fontSize: 15,
+    color: '#2C2C2C',
+    lineHeight: 22,
+    flex: 1,
+  },
+  scriptureSection: {
+    backgroundColor: '#F9F7F4',
+    borderRadius: 12,
+    padding: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#D4AF37',
+    marginBottom: 16,
+  },
+  scriptureText: {
+    fontSize: 15,
+    color: '#2C2C2C',
+    lineHeight: 22,
+    fontStyle: 'italic',
+    marginBottom: 8,
+  },
+  scriptureSource: {
+    fontSize: 13,
+    color: '#D4AF37',
+    fontWeight: '600',
+  },
+  explanationSection: {
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  explanationTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#2C2C2C',
+    marginBottom: 8,
+  },
+  explanationText: {
+    fontSize: 14,
+    color: '#5A5A5A',
+    lineHeight: 20,
+  },
+  outroContainer: {
+    marginTop: 24,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  outroText: {
+    fontSize: 16,
+    color: '#2C2C2C',
+    lineHeight: 24,
+    fontStyle: 'italic',
   },
 });

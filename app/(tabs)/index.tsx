@@ -24,12 +24,11 @@ const examplePrompts = [
 export default function HomeScreen() {
   const handleStartChat = (prompt?: string) => {
     if (prompt) {
-      router.push({ pathname: '/chat', params: { initialPrompt: prompt } });
+      router.replace({ pathname: '/(tabs)/chat', params: { initialPrompt: prompt } });
     } else {
-      router.push('/chat');
+      router.replace('/(tabs)/chat');
     }
   };
-
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
