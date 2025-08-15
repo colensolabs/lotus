@@ -109,19 +109,22 @@ export default function ChatScreen() {
       setCurrentConversationId(null);
     }
   }, [conversationId, dbMessages]);
+  
+  // Handle initialPrompt only once when component mounts for new conversations
   useEffect(() => {
-    // NEVER handle initialPrompt if there's a conversationId (old chat)
-    if (conversationId) return;
-    
-    // NEVER handle initialPrompt if there are any database messages (old chat)
-    if (dbMessages.length > 0) return;
-    
-    // Only handle initialPrompt for completely new conversations
-    if (initialPrompt && typeof initialPrompt === 'string' && messages.length === 0) {
-      handleSendMessage(initialPrompt);
-      setConversationStarted(true);
+    // Only handle initialPrompt if this is a completely new conversation
+    if (!conversationId && !dbMessages.length && initialPrompt && typeof initialPrompt === 'string') {
+      // Use a timeout to ensure this runs after all other effects
+      const timer = setTimeout(() => {
+        if (messages.length === 0) { // Double check no messages were loaded
+          handleSendMessage(initialPrompt);
+          setConversationStarted(true);
+        }
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
-  }, [initialPrompt, conversationId, dbMessages.length, messages.length]);
+  }, []); // Empty dependency array - only run once on mount
 
   const handleSendMessage = async (text?: string) => {
     const messageText = text || inputText.trim();
