@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
 
 const AUTH_STORAGE_KEY = 'user_auth_state';
 
@@ -88,6 +89,8 @@ export const useAuth = () => {
         user: null,
         isLoading: false,
       });
+      // Redirect to login screen
+      router.replace('/(auth)/login');
     } catch (error) {
       console.error('Logout error:', error);
     }
