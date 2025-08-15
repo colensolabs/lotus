@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 'react-native';
 import { Image } from 'react-native';
 import { useState, useEffect } from 'react';
-import { Bot as Lotus, Bell, Heart, MessageCircle, CircleHelp as HelpCircle, Star, Vibrate } from 'lucide-react-native';
+import { Bot as Lotus, Bell, Heart, MessageCircle, CircleHelp as HelpCircle, Star, Vibrate, User } from 'lucide-react-native';
 import { LogOut } from 'lucide-react-native';
 import { useStreamingSpeed, StreamingSpeed } from '@/hooks/useStreamingSpeed';
 import { useHapticSettings } from '@/hooks/useHapticSettings';
@@ -95,7 +95,9 @@ export default function SettingsScreen() {
           <View style={styles.avatarContainer}>
             <Image source={require('../../assets/images/logo2.jpg')} style={styles.avatarImage} />
           </View>
-          <Text style={styles.profileTitle}>{user?.name || 'User'}</Text>
+          <Text style={styles.profileTitle}>
+            {user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'User'}
+          </Text>
           <Text style={styles.profileSubtitle}>{user?.email}</Text>
         </View>
       </View>
