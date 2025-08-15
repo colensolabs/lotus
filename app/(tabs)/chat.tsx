@@ -110,11 +110,11 @@ export default function ChatScreen() {
     }
   }, [conversationId, dbMessages]);
   useEffect(() => {
-    if (initialPrompt && typeof initialPrompt === 'string') {
+    if (initialPrompt && typeof initialPrompt === 'string' && !conversationId) {
       handleSendMessage(initialPrompt);
       setConversationStarted(true);
     }
-  }, [initialPrompt]);
+  }, [initialPrompt, conversationId]);
 
   const handleSendMessage = async (text?: string) => {
     const messageText = text || inputText.trim();
