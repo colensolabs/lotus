@@ -45,6 +45,13 @@ export const useMessages = (conversationId: string | null) => {
     if (!conversationId) return null;
 
     try {
+      console.log('Saving message to database:', {
+        conversationId,
+        content: content.substring(0, 50) + '...',
+        isUser,
+        hasGuidanceData: !!guidanceData
+      });
+      
       const { data, error } = await supabase
         .from('messages')
         .insert({
@@ -57,9 +64,12 @@ export const useMessages = (conversationId: string | null) => {
         .single();
 
       if (error) {
+        console.error('Supabase error saving message:', error);
         throw error;
       }
 
+      console.log('Message saved successfully:', data.id);
+      
       // Add to local state
       setMessages(prev => [...prev, data]);
       

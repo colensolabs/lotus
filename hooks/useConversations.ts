@@ -52,6 +52,8 @@ export const useConversations = () => {
     if (!user) return null;
 
     try {
+      console.log('Creating conversation:', { title, userId: user.id });
+      
       const { data, error } = await supabase
         .from('conversations')
         .insert({
@@ -65,9 +67,12 @@ export const useConversations = () => {
         .single();
 
       if (error) {
+        console.error('Supabase error creating conversation:', error);
         throw error;
       }
 
+      console.log('Conversation created successfully:', data.id);
+      
       // Refresh conversations list
       await fetchConversations();
       
@@ -81,15 +86,20 @@ export const useConversations = () => {
 
   const updateConversation = async (conversationId: string, updates: Partial<Conversation>) => {
     try {
+      console.log('Updating conversation:', conversationId, updates);
+      
       const { error } = await supabase
         .from('conversations')
         .update(updates)
         .eq('id', conversationId);
 
       if (error) {
+        console.error('Supabase error updating conversation:', error);
         throw error;
       }
 
+      console.log('Conversation updated successfully');
+      
       // Update local state
       setConversations(prev => 
         prev.map(conv => 

@@ -146,16 +146,103 @@ export default function ChatScreen() {
     setInputText('');
     setIsLoading(true);
     
-    // Save user message to database
-    if (conversationIdToUse) {
-      await addMessage(messageText, true);
+    // Save user message to database immediately
+    try {
+      if (conversationIdToUse) {
+        const savedUserMessage = await addMessage(messageText, true);
+        if (!savedUserMessage) {
+          console.error('Failed to save user message');
+        }
+      }
+    } catch (error) {
+      console.error('Error saving user message:', error);
     }
 
     // Determine if this is a follow-up message
     const isFollowUp = conversationStarted && messages.length > 0;
 
-    getBuddhistGuidance(messageText, isFollowUp)
-      .then(async (guidance) => {
+    try {
+      const guidance = await getBuddhistGuidance(messageText, isFollowUp);
+      
+      const messageId = (Date.now() + 1).toString();
+      
+      let botMessage: Message;
+      
+      if (guidance.isFollowUp && guidance.simpleResponse) {
+        // Follow-up response - simple format
+        botMessage = {
+          id: messageId,
+          text: guidance.simpleResponse,
+          isUser: false,
+          timestamp: new Date(),
+          isStreaming: true,
+          isFollowUp: true,
+          simpleResponse: guidance.simpleResponse,
+        };
+      } else {
+        // Initial structured response
+        botMessage = {
+          id: messageId,
+          text: guidance.intro,
+          isUser: false,
+          timestamp: new Date(),
+          isStreaming: true,
+          guidance,
+        };
+      }
+      
+      setMessages(prev => [...prev, botMessage]);
+      setStreamingMessageId(messageId);
+      
+      // Save bot message to database
+      try {
+        if (conversationIdToUse) {
+          const guidanceData = guidance.isFollowUp && guidance.simpleResponse 
+            ? {
+                isFollowUp: true,
+                simpleResponse: guidance.simpleResponse,
+              }
+            : {
+                isFollowUp: false,
+                guidance,
+              };
+          
+          const messageContent = guidance.isFollowUp && guidance.simpleResponse 
+            ? guidance.simpleResponse 
+            : guidance.intro;
+            
+          const savedBotMessage = await addMessage(messageContent, false, guidanceData);
+          if (!savedBotMessage) {
+            console.error('Failed to save bot message');
+          }
+          
+          // Update conversation preview and stats
+          await updateConversation(conversationIdToUse, {
+            preview: messageText.substring(0, 100),
+            last_message_at: new Date().toISOString(),
+          });
+        }
+      } catch (error) {
+        console.error('Error saving bot message:', error);
+      }
+
+      if (!conversationStarted) {
+        setConversationStarted(true);
+      }
+    } catch (error) {
+      console.error('API Error:', error);
+      Alert.alert(
+        'Error',
+        'Failed to get guidance. Please try again.'
+      );
+      
+      // Remove the user message from UI if API call failed
+      setMessages(prev => prev.slice(0, -1));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
         const messageId = (Date.now() + 1).toString();
         
         let botMessage: Message;
