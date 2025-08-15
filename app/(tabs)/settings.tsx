@@ -7,13 +7,51 @@ import { useStreamingSpeed, StreamingSpeed } from '@/hooks/useStreamingSpeed';
 import { useHapticSettings } from '@/hooks/useHapticSettings';
 import { useAuth } from '@/hooks/useAuth';
 import { triggerSelectionHaptic } from '@/utils/haptics';
+import { supabase } from '@/lib/supabase';
 
 export default function SettingsScreen() {
   const { speed, updateSpeed } = useStreamingSpeed();
   const { isEnabled: hapticsEnabled, updateSetting: updateHaptics } = useHapticSettings();
   const { user, logout } = useAuth();
+  const [userProfile, setUserProfile] = useState<{ display_name: string | null; email: string } | null>(null);
   const [notifications, setNotifications] = useState(true);
   const [saveConversations, setSaveConversations] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserProfile();
+    }
+  }, [user]);
+
+  const fetchUserProfile = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('display_name, email')
+        .eq('id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        // Fallback to auth metadata
+        setUserProfile({
+          display_name: user.user_metadata?.display_name || null,
+          email: user.email || ''
+        });
+      } else {
+        setUserProfile(data);
+      }
+    } catch (error) {
+      console.error('Error in fetchUserProfile:', error);
+      // Fallback to auth metadata
+      setUserProfile({
+        display_name: user.user_metadata?.display_name || null,
+        email: user.email || ''
+      });
+    }
+  };
 
   const StreamingSpeedSelector = () => {
     const speeds: { value: StreamingSpeed; label: string; description: string }[] = [
@@ -96,9 +134,9 @@ export default function SettingsScreen() {
             <Image source={require('../../assets/images/logo2.jpg')} style={styles.avatarImage} />
           </View>
           <Text style={styles.profileTitle}>
-            {user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'User'}
+            {userProfile?.display_name || user?.email?.split('@')[0] || 'User'}
           </Text>
-          <Text style={styles.profileSubtitle}>{user?.email}</Text>
+          <Text style={styles.profileSubtitle}>{userProfile?.email || user?.email}</Text>
         </View>
       </View>
 
