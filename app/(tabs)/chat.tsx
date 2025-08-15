@@ -149,18 +149,11 @@ export default function ChatScreen() {
     // Save user message to database immediately
     try {
       if (conversationIdToUse) {
-        console.log('About to save user message with conversationId:', conversationIdToUse);
         const savedUserMessage = await addMessage(messageText, true);
-        if (savedUserMessage) {
-          console.log('User message saved successfully');
-        } else {
-          console.error('addMessage returned null for user message');
-        }
-      } else {
-        console.error('No conversationId available for saving user message');
+        console.log('User message saved successfully');
       }
     } catch (error) {
-      console.error('Exception while saving user message:', error);
+      console.error('Failed to save user message:', error);
     }
 
     // Determine if this is a follow-up message
@@ -217,11 +210,7 @@ export default function ChatScreen() {
             : guidance.intro;
             
           const savedBotMessage = await addMessage(messageContent, false, guidanceData);
-          if (!savedBotMessage) {
-            console.error('Failed to save bot message to database');
-          } else {
-            console.log('Bot message saved successfully:', savedBotMessage.id);
-          }
+          console.log('Bot message saved successfully:', savedBotMessage.id);
           
           // Update conversation preview and stats
           await updateConversation(conversationIdToUse, {
@@ -230,7 +219,7 @@ export default function ChatScreen() {
           });
         }
       } catch (error) {
-        console.error('Error saving bot message:', error);
+        console.error('Failed to save bot message:', error);
         console.error('Bot message save error details:', error);
       }
 

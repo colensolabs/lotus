@@ -45,14 +45,6 @@ export const useMessages = (conversationId: string | null) => {
     if (!conversationId) return null;
 
     try {
-      console.log('Attempting to save message:', {
-        conversationId,
-        contentLength: content.length,
-        isUser,
-        hasGuidanceData: !!guidanceData,
-        guidanceDataType: typeof guidanceData
-      });
-      
       const { data, error } = await supabase
         .from('messages')
         .insert({
@@ -65,43 +57,20 @@ export const useMessages = (conversationId: string | null) => {
         .single();
 
       if (error) {
-        console.error('Supabase INSERT error:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-          conversationId,
-          isUser,
-          contentLength: content.length
-        });
+        console.error('Supabase INSERT error:', error);
         throw error;
       }
 
-      if (!data) {
-        console.error('No data returned from insert operation');
-        throw new Error('No data returned from database');
-      }
-
-      console.log('Message saved successfully:', {
-        messageId: data.id,
-        conversationId: data.conversation_id,
-        isUser: data.is_user
-      });
+      console.log('Message saved successfully:', data.id);
       
       // Add to local state
       setMessages(prev => [...prev, data]);
       
       return data;
     } catch (err) {
-      console.error('Complete error in addMessage:', {
-        error: err,
-        errorMessage: err instanceof Error ? err.message : 'Unknown error',
-        conversationId,
-        isUser,
-        stack: err instanceof Error ? err.stack : undefined
-      });
-      setError(`Database error: ${err instanceof Error ? err.message : 'Unknown error'}`);
-      return null;
+      console.error('Error in addMessage:', err);
+      setError('Failed to save message');
+      throw err; // Re-throw the error instead of returning null
     }
   };
 
