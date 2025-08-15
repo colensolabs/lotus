@@ -24,9 +24,9 @@ const examplePrompts = [
 export default function HomeScreen() {
   const handleStartChat = (prompt?: string) => {
     if (prompt) {
-      router.push({ pathname: '/chat', params: { initialPrompt: prompt } });
+      router.push({ pathname: '/(tabs)/chat', params: { initialPrompt: prompt } });
     } else {
-      router.push('/chat');
+      router.push('/(tabs)/chat');
     }
   };
   return (

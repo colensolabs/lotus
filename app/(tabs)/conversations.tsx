@@ -34,7 +34,7 @@ export default function ConversationsScreen() {
   };
 
   const handleStartNewChat = () => {
-    router.push('/chat');
+    router.push('/(tabs)/chat');
   };
 
   const handleOpenConversation = (conversationId: string) => {
