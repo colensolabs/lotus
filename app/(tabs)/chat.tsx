@@ -85,56 +85,56 @@ export default function ChatScreen() {
   }, []);
 
   useEffect(() => {
-    // Handle loading existing conversation OR processing initial prompt
-    if (conversationId) {
-      // This is an existing conversation
-      setCurrentConversationId(conversationId);
-      // This is an existing conversation - just load messages, NO API calls
-      if (dbMessages.length > 0) {
-        const loadedMessages: Message[] = dbMessages.map(msg => ({
-          id: msg.id,
-          text: msg.content,
-          isUser: msg.is_user,
-          timestamp: new Date(msg.created_at || ''),
-          isFollowUp: msg.guidance_data?.isFollowUp || false,
-          guidance: msg.guidance_data?.guidance || undefined,
-          simpleResponse: msg.guidance_data?.simpleResponse || undefined,
-          isStreaming: false,
-          isCancelled: true, // This ensures no streaming animation for historical messages
-        }));
-        setMessages(loadedMessages);
+    if (!hasProcessedInitialSetup) {
+      if (conversationId) {
+        // This is an existing conversation
+        setCurrentConversationId(conversationId);
         setConversationStarted(true);
-        
-        // Scroll to bottom when loading conversation history
-        setTimeout(() => {
-          scrollViewRef.current?.scrollToEnd({ animated: false });
-        }, 100);
+      } else if (initialPrompt && typeof initialPrompt === 'string') {
+        // This is a new conversation with an initial prompt
+        setCurrentConversationId(null);
+        setMessages([]);
+        setConversationStarted(false);
+        console.log('Initial prompt disabled:', initialPrompt);
+        setConversationStarted(true);
+      } else {
+        // This is a completely new conversation with no initial prompt
+        setCurrentConversationId(null);
+        setMessages([]);
+        setConversationStarted(false);
       }
       setHasProcessedInitialSetup(true);
-    } else if (!hasProcessedInitialSetup && initialPrompt && typeof initialPrompt === 'string') {
-      // This is a new conversation with an initial prompt
-      setCurrentConversationId(null);
+    }
+  }, [conversationId, initialPrompt, hasProcessedInitialSetup]);
+
+  // Separate effect for loading messages when conversationId changes
+  useEffect(() => {
+    if (conversationId && dbMessages.length > 0) {
+      const loadedMessages: Message[] = dbMessages.map(msg => ({
+        id: msg.id,
+        text: msg.content,
+        isUser: msg.is_user,
+        timestamp: new Date(msg.created_at || ''),
+        isFollowUp: msg.guidance_data?.isFollowUp || false,
+        guidance: msg.guidance_data?.guidance || undefined,
+        simpleResponse: msg.guidance_data?.simpleResponse || undefined,
+        isStreaming: false,
+        isCancelled: true, // This ensures no streaming animation for historical messages
+      }));
+      setMessages(loadedMessages);
+      
+      // Scroll to bottom when loading conversation history
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: false });
+      }, 100);
+    } else if (!conversationId) {
+      // Clear messages for new conversation
       setMessages([]);
       setConversationStarted(false);
-      // This is a new conversation with an initial prompt
-      // TEMPORARILY DISABLED - handleSendMessage(initialPrompt);
-      console.log('Initial prompt disabled:', initialPrompt);
-      setConversationStarted(true);
-      setHasProcessedInitialSetup(true);
-    } else if (!hasProcessedInitialSetup) {
-      // This is a completely new conversation with no initial prompt
       setCurrentConversationId(null);
-      setMessages([]);
-      setConversationStarted(false);
-      setHasProcessedInitialSetup(true);
-    } else if (!conversationId && hasProcessedInitialSetup) {
-      // Reset state when navigating to new conversation after being in an existing one
-      setCurrentConversationId(null);
-      setMessages([]);
-      setConversationStarted(false);
       clearMessages();
     }
-  }, [conversationId, dbMessages, initialPrompt, hasProcessedInitialSetup]);
+  }, [conversationId, dbMessages]);
 
   // Remove the old effects completely
   /*
