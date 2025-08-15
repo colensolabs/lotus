@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Image } from 'react-native';
 import { router } from 'expo-router';
-import { MessageCircle, Heart, Bot as Lotus, Compass, MessageSquare, History } from 'lucide-react-native';
+import { MessageCircle, Heart, Bot as Lotus, Compass, MessageSquare } from 'lucide-react-native';
 
 const examplePrompts = [
   {
@@ -28,10 +28,6 @@ export default function HomeScreen() {
     } else {
       router.push('/chat');
     }
-  };
-
-  const handleViewHistory = () => {
-    router.push('/conversations');
   };
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
@@ -85,15 +81,6 @@ export default function HomeScreen() {
       >
         <MessageCircle size={20} color="#FEFEFE" strokeWidth={2} />
         <Text style={styles.startButtonText}>Start New Conversation</Text>
-
-        <TouchableOpacity
-          style={styles.historyButton}
-          onPress={handleViewHistory}
-          activeOpacity={0.8}
-        >
-          <History size={20} color="#D4AF37" strokeWidth={2} />
-          <Text style={styles.historyButtonText}>View Chat History</Text>
-        </TouchableOpacity>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -246,33 +233,6 @@ const styles = StyleSheet.create({
   },
   startButtonText: {
     color: '#FEFEFE',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  historyButton: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 24,
-    marginTop: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#D4AF37',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  historyButtonText: {
-    color: '#D4AF37',
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
