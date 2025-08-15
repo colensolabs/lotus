@@ -92,6 +92,8 @@ export default function ChatScreen() {
         isFollowUp: msg.guidance_data?.isFollowUp || false,
         guidance: msg.guidance_data?.guidance || undefined,
         simpleResponse: msg.guidance_data?.simpleResponse || undefined,
+        isStreaming: false,
+        isCancelled: false,
       }));
       setMessages(loadedMessages);
       setConversationStarted(true);
