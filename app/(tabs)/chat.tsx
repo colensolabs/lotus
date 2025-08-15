@@ -210,7 +210,11 @@ export default function ChatScreen() {
             : guidance.intro;
             
           const savedBotMessage = await addMessage(messageContent, false, guidanceData);
-          console.log('Bot message saved successfully:', savedBotMessage.id);
+          if (savedBotMessage) {
+            console.log('Bot message saved successfully:', savedBotMessage.id);
+          } else {
+            console.log('Bot message returned null - check database constraints');
+          }
           
           // Update conversation preview and stats
           await updateConversation(conversationIdToUse, {

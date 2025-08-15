@@ -42,7 +42,10 @@ export const useMessages = (conversationId: string | null) => {
   };
 
   const addMessage = async (content: string, isUser: boolean, guidanceData?: any): Promise<Message | null> => {
-    if (!conversationId) return null;
+    if (!conversationId) {
+      console.error('addMessage called without conversationId');
+      throw new Error('No conversation ID provided');
+    }
 
     try {
       const { data, error } = await supabase
@@ -58,6 +61,7 @@ export const useMessages = (conversationId: string | null) => {
 
       if (error) {
         console.error('Supabase INSERT error:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
         throw error;
       }
 
@@ -69,8 +73,9 @@ export const useMessages = (conversationId: string | null) => {
       return data;
     } catch (err) {
       console.error('Error in addMessage:', err);
-      setError('Failed to save message');
-      throw err; // Re-throw the error instead of returning null
+      console.error('Full error object:', err);
+      setError(`Failed to save message: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      throw err;
     }
   };
 
