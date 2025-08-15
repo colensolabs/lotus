@@ -8,16 +8,11 @@ import { useConversations } from '@/hooks/useConversations';
 export default function ConversationsScreen() {
   const { conversations, isLoading, fetchConversations, deleteConversation } = useConversations();
   const [refreshing, setRefreshing] = useState(false);
-  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
 
   // Refresh conversations every time the screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      if (!hasInitiallyLoaded) {
-        fetchConversations().then(() => setHasInitiallyLoaded(true));
-      } else {
-        fetchConversations();
-      }
+      fetchConversations();
     }, [fetchConversations])
   );
 
@@ -95,7 +90,7 @@ export default function ConversationsScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {conversations.length === 0 && !isLoading && hasInitiallyLoaded ? (
+        {conversations.length === 0 && !isLoading ? (
           <View style={styles.emptyState}>
             <MessageCircle size={48} color="#D4AF37" strokeWidth={1.5} />
             <Text style={styles.emptyStateTitle}>No conversations yet</Text>

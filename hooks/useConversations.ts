@@ -22,10 +22,7 @@ export const useConversations = () => {
     if (!user) return;
 
     try {
-      // Only show loading on initial fetch, not on subsequent refreshes
-      if (conversations.length === 0) {
-        setIsLoading(true);
-      }
+      setIsLoading(true);
       
       const { data, error } = await supabase
         .from('conversations')
