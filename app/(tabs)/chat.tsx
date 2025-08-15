@@ -87,6 +87,8 @@ export default function ChatScreen() {
   useEffect(() => {
     // Handle loading existing conversation OR processing initial prompt
     if (conversationId) {
+      // This is an existing conversation
+      setCurrentConversationId(conversationId);
       // This is an existing conversation - just load messages, NO API calls
       if (dbMessages.length > 0) {
         const loadedMessages: Message[] = dbMessages.map(msg => ({
@@ -111,13 +113,26 @@ export default function ChatScreen() {
       setHasProcessedInitialSetup(true);
     } else if (!hasProcessedInitialSetup && initialPrompt && typeof initialPrompt === 'string') {
       // This is a new conversation with an initial prompt
+      setCurrentConversationId(null);
+      setMessages([]);
+      setConversationStarted(false);
+      // This is a new conversation with an initial prompt
       // TEMPORARILY DISABLED - handleSendMessage(initialPrompt);
       console.log('Initial prompt disabled:', initialPrompt);
       setConversationStarted(true);
       setHasProcessedInitialSetup(true);
     } else if (!hasProcessedInitialSetup) {
       // This is a completely new conversation with no initial prompt
+      setCurrentConversationId(null);
+      setMessages([]);
+      setConversationStarted(false);
       setHasProcessedInitialSetup(true);
+    } else if (!conversationId && hasProcessedInitialSetup) {
+      // Reset state when navigating to new conversation after being in an existing one
+      setCurrentConversationId(null);
+      setMessages([]);
+      setConversationStarted(false);
+      clearMessages();
     }
   }, [conversationId, dbMessages, initialPrompt, hasProcessedInitialSetup]);
 
