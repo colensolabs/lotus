@@ -149,10 +149,7 @@ export default function ChatScreen() {
     // Save user message to database immediately
     try {
       if (conversationIdToUse) {
-        const savedUserMessage = await addMessage(messageText, true);
-        if (!savedUserMessage) {
-          console.error('Failed to save user message');
-        }
+        await addMessage(messageText, true);
       }
     } catch (error) {
       console.error('Error saving user message:', error);
@@ -211,10 +208,7 @@ export default function ChatScreen() {
             ? guidance.simpleResponse 
             : guidance.intro;
             
-          const savedBotMessage = await addMessage(messageContent, false, guidanceData);
-          if (!savedBotMessage) {
-            console.error('Failed to save bot message');
-          }
+          await addMessage(messageContent, false, guidanceData);
           
           // Update conversation preview and stats
           await updateConversation(conversationIdToUse, {
