@@ -218,20 +218,7 @@ export default function ChatScreen() {
     const isFollowUp = conversationStarted && messages.length > 0;
 
     try {
-      // TEMPORARILY DISABLED - const guidance = await getBuddhistGuidance(messageText, isFollowUp);
-      const guidance = {
-        intro: "This is a test response - API calls are temporarily disabled",
-        practicalSteps: "• Test step 1\n• Test step 2\n• Test step 3",
-        reflection: "This is a test reflection",
-        scripture: {
-          text: "Test scripture text",
-          source: "Test Source",
-          explanation: "Test explanation"
-        },
-        outro: "Test outro message",
-        isFollowUp: isFollowUp,
-        simpleResponse: isFollowUp ? "This is a test follow-up response" : undefined
-      };
+      const guidance = await getBuddhistGuidance(messageText, isFollowUp);
       
       const messageId = (Date.now() + 1).toString();
       
