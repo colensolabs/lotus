@@ -2,13 +2,16 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 're
 import { Image } from 'react-native';
 import { useState, useEffect } from 'react';
 import { Bot as Lotus, Bell, Heart, MessageCircle, CircleHelp as HelpCircle, Star, Vibrate } from 'lucide-react-native';
+import { LogOut } from 'lucide-react-native';
 import { useStreamingSpeed, StreamingSpeed } from '@/hooks/useStreamingSpeed';
 import { useHapticSettings } from '@/hooks/useHapticSettings';
+import { useAuth } from '@/hooks/useAuth';
 import { triggerSelectionHaptic } from '@/utils/haptics';
 
 export default function SettingsScreen() {
   const { speed, updateSpeed } = useStreamingSpeed();
   const { isEnabled: hapticsEnabled, updateSetting: updateHaptics } = useHapticSettings();
+  const { user, logout } = useAuth();
   const [notifications, setNotifications] = useState(true);
   const [saveConversations, setSaveConversations] = useState(false);
 
@@ -92,8 +95,8 @@ export default function SettingsScreen() {
           <View style={styles.avatarContainer}>
             <Image source={require('../../assets/images/logo2.jpg')} style={styles.avatarImage} />
           </View>
-          <Text style={styles.profileTitle}>Lotus Guide</Text>
-          <Text style={styles.profileSubtitle}>Your Buddhist companion</Text>
+          <Text style={styles.profileTitle}>{user?.name || 'User'}</Text>
+          <Text style={styles.profileSubtitle}>{user?.email}</Text>
         </View>
       </View>
 
@@ -191,6 +194,17 @@ export default function SettingsScreen() {
           title="Help & Feedback"
           subtitle="Get support or share thoughts"
           onPress={() => {}}
+        />
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Account</Text>
+        
+        <SettingsRow
+          icon={<LogOut size={20} color="#F87171" strokeWidth={1.5} />}
+          title="Sign Out"
+          subtitle="Log out of your account"
+          onPress={logout}
         />
       </View>
 
