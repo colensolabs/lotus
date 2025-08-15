@@ -1,140 +1,50 @@
-import { useState, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from 'expo-router'
+import { useEffect } from 'react';
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
+import { useAuth } from '@/hooks/useAuth';
+import { router } from 'expo-router';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
-const AUTH_STORAGE_KEY = 'user_auth_state';
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-}
-
-interface AuthState {
-  isAuthenticated: boolean;
-  user: User | null;
-  isLoading: boolean;
-}
-
-export const useAuth = () => {
-  const [authState, setAuthState] = useState<AuthState>({
-    isAuthenticated: false,
-    user: null,
-    isLoading: true,
-  });
+export default function RootLayout() {
+  useFrameworkReady();
+  const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
-    loadAuthState();
-  }, []);
-
-  const loadAuthState = async () => {
-    try {
-      const savedAuth = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
-      if (savedAuth) {
-        const parsedAuth = JSON.parse(savedAuth);
-        setAuthState({
-          isAuthenticated: true,
-          user: parsedAuth.user,
-          isLoading: false,
-        });
+    if (!isLoading) {
+      if (isAuthenticated) {
+        router.replace('/(tabs)');
       } else {
-        setAuthState(prev => ({ ...prev, isLoading: false }));
+        router.replace('/(auth)/login');
       }
-    } catch (error) {
-      console.error('Error loading auth state:', error);
-      setAuthState(prev => ({ ...prev, isLoading: false }));
     }
-  };
+  }, [isAuthenticated, isLoading]);
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      // Simple validation - in a real app, you'd validate against a backend
-      if (!email || !password) {
-        return { success: false, error: 'Email and password are required' };
-      }
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#D4AF37" />
+      </View>
+    );
+  }
 
-      if (password.length < 6) {
-        return { success: false, error: 'Password must be at least 6 characters' };
-      }
+  return (
+    <>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="+not-found" />
+      </Stack>
+      <StatusBar style="auto" />
+    </>
+  );
+}
 
-      // Create a mock user
-      const user: User = {
-        id: Date.now().toString(),
-        email: email.toLowerCase(),
-        name: email.split('@')[0], // Use email prefix as name
-      };
-
-      // Save auth state
-      const authData = { user };
-      await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData));
-
-      setAuthState({
-        isAuthenticated: true,
-        user,
-        isLoading: false,
-      });
-
-      return { success: true };
-    } catch (error) {
-      console.error('Login error:', error);
-      return { success: false, error: 'Login failed. Please try again.' };
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
-      setAuthState({
-        isAuthenticated: false,
-        user: null,
-        isLoading: false,
-      });
-      // Redirect to login screen
-      router.replace('/(auth)/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
-
-  const register = async (email: string, password: string, name: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      if (!email || !password || !name) {
-        return { success: false, error: 'All fields are required' };
-      }
-
-      if (password.length < 6) {
-        return { success: false, error: 'Password must be at least 6 characters' };
-      }
-
-      // Create user
-      const user: User = {
-        id: Date.now().toString(),
-        email: email.toLowerCase(),
-        name: name.trim(),
-      };
-
-      // Save auth state
-      const authData = { user };
-      await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData));
-
-      setAuthState({
-        isAuthenticated: true,
-        user,
-        isLoading: false,
-      });
-
-      return { success: true };
-    } catch (error) {
-      console.error('Registration error:', error);
-      return { success: false, error: 'Registration failed. Please try again.' };
-    }
-  };
-
-  return {
-    ...authState,
-    login,
-    logout,
-    register,
-  };
-};
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5F1E8',
+  },
+});
