@@ -22,7 +22,11 @@ export const useConversations = () => {
     if (!user) return;
 
     try {
-      setIsLoading(true);
+      // Only show loading on initial fetch, not on subsequent refreshes
+      if (conversations.length === 0) {
+        setIsLoading(true);
+      }
+      
       const { data, error } = await supabase
         .from('conversations')
         .select('*')
@@ -35,6 +39,7 @@ export const useConversations = () => {
       }
 
       setConversations(data || []);
+      setError(null);
     } catch (err) {
       console.error('Error fetching conversations:', err);
       setError('Failed to load conversations');
