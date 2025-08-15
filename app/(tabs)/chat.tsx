@@ -76,11 +76,52 @@ export default function ChatScreen() {
   const [conversationStarted, setConversationStarted] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(conversationId || null);
 
+  // Track if we've processed the initial setup
+  const [hasProcessedInitialSetup, setHasProcessedInitialSetup] = useState(false);
+
   useEffect(() => {
     // Generate random suggestions on component mount
     setSuggestions(getRandomSuggestions(2));
   }, []);
 
+  useEffect(() => {
+    // Handle loading existing conversation OR processing initial prompt
+    if (conversationId) {
+      // This is an existing conversation - just load messages, NO API calls
+      if (dbMessages.length > 0) {
+        const loadedMessages: Message[] = dbMessages.map(msg => ({
+          id: msg.id,
+          text: msg.content,
+          isUser: msg.is_user,
+          timestamp: new Date(msg.created_at || ''),
+          isFollowUp: msg.guidance_data?.isFollowUp || false,
+          guidance: msg.guidance_data?.guidance || undefined,
+          simpleResponse: msg.guidance_data?.simpleResponse || undefined,
+          isStreaming: false,
+          isCancelled: false,
+        }));
+        setMessages(loadedMessages);
+        setConversationStarted(true);
+        
+        // Scroll to bottom when loading conversation history
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: false });
+        }, 100);
+      }
+      setHasProcessedInitialSetup(true);
+    } else if (!hasProcessedInitialSetup && initialPrompt && typeof initialPrompt === 'string') {
+      // This is a new conversation with an initial prompt
+      handleSendMessage(initialPrompt);
+      setConversationStarted(true);
+      setHasProcessedInitialSetup(true);
+    } else if (!hasProcessedInitialSetup) {
+      // This is a completely new conversation with no initial prompt
+      setHasProcessedInitialSetup(true);
+    }
+  }, [conversationId, dbMessages, initialPrompt, hasProcessedInitialSetup]);
+
+  // Remove the old effects completely
+  /*
   useEffect(() => {
     // Load existing conversation messages
     if (conversationId && dbMessages.length > 0) {
@@ -109,22 +150,7 @@ export default function ChatScreen() {
       setCurrentConversationId(null);
     }
   }, [conversationId, dbMessages]);
-  
-  // Handle initialPrompt only once when component mounts for new conversations
-  useEffect(() => {
-    // Only handle initialPrompt if this is a completely new conversation
-    if (!conversationId && !dbMessages.length && initialPrompt && typeof initialPrompt === 'string') {
-      // Use a timeout to ensure this runs after all other effects
-      const timer = setTimeout(() => {
-        if (messages.length === 0) { // Double check no messages were loaded
-          handleSendMessage(initialPrompt);
-          setConversationStarted(true);
-        }
-      }, 100);
-      
-      return () => clearTimeout(timer);
-    }
-  }, []); // Empty dependency array - only run once on mount
+  */
 
   const handleSendMessage = async (text?: string) => {
     const messageText = text || inputText.trim();
