@@ -66,7 +66,7 @@ export default function ChatScreen() {
   }>();
   const { speedValue } = useStreamingSpeed();
   const { createConversation, updateConversation } = useConversations();
-  const { messages: dbMessages, addMessage, clearMessages } = useMessages(conversationId || null);
+  const { messages: dbMessages, addMessageToConversation, clearMessages } = useMessages(conversationId || null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -149,7 +149,7 @@ export default function ChatScreen() {
     // Save user message to database immediately
     try {
       if (conversationIdToUse) {
-        const savedUserMessage = await addMessage(messageText, true);
+        const savedUserMessage = await addMessageToConversation(conversationIdToUse, messageText, true);
         console.log('User message saved successfully');
       }
     } catch (error) {
@@ -209,7 +209,7 @@ export default function ChatScreen() {
             ? guidance.simpleResponse 
             : guidance.intro;
             
-          const savedBotMessage = await addMessage(messageContent, false, guidanceData);
+          const savedBotMessage = await addMessageToConversation(conversationIdToUse, messageContent, false, guidanceData);
           if (savedBotMessage) {
             console.log('Bot message saved successfully:', savedBotMessage.id);
           } else {

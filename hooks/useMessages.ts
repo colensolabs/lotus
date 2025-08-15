@@ -42,8 +42,12 @@ export const useMessages = (conversationId: string | null) => {
   };
 
   const addMessage = async (content: string, isUser: boolean, guidanceData?: any): Promise<Message | null> => {
+    throw new Error('addMessage called without explicit conversationId parameter');
+  };
+
+  const addMessageToConversation = async (conversationId: string, content: string, isUser: boolean, guidanceData?: any): Promise<Message | null> => {
     if (!conversationId) {
-      console.error('addMessage called without conversationId');
+      console.error('addMessageToConversation called without conversationId');
       throw new Error('No conversation ID provided');
     }
 
@@ -89,6 +93,7 @@ export const useMessages = (conversationId: string | null) => {
     error,
     fetchMessages,
     addMessage,
+    addMessageToConversation,
     clearMessages,
   };
 };
