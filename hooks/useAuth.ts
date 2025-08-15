@@ -1,19 +1,13 @@
 import { useState, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-
-const AUTH_STORAGE_KEY = 'user_auth_state';
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-}
+import { supabase } from '@/lib/supabase';
+import type { User, Session } from '@supabase/supabase-js';
 
 interface AuthState {
   isAuthenticated: boolean;
   user: User | null;
   isLoading: boolean;
+  session: Session | null;
 }
 
 export const useAuth = () => {
@@ -21,78 +15,82 @@ export const useAuth = () => {
     isAuthenticated: false,
     user: null,
     isLoading: true,
+    session: null,
   });
 
   useEffect(() => {
-    loadAuthState();
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setAuthState({
+        isAuthenticated: !!session,
+        user: session?.user ?? null,
+        session,
+        isLoading: false,
+      });
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.email);
+      
+      setAuthState({
+        isAuthenticated: !!session,
+        user: session?.user ?? null,
+        session,
+        isLoading: false,
+      });
+
+      // Create or update user profile when user signs in
+      if (event === 'SIGNED_IN' && session?.user) {
+        await createOrUpdateUserProfile(session.user);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const loadAuthState = async () => {
+  const createOrUpdateUserProfile = async (user: User) => {
     try {
-      const savedAuth = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
-      if (savedAuth) {
-        const parsedAuth = JSON.parse(savedAuth);
-        setAuthState({
-          isAuthenticated: true,
-          user: parsedAuth.user,
-          isLoading: false,
+      const { error } = await supabase
+        .from('user_profiles')
+        .upsert({
+          id: user.id,
+          email: user.email!,
+          display_name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'email'
         });
-      } else {
-        setAuthState(prev => ({ ...prev, isLoading: false }));
+
+      if (error) {
+        console.error('Error creating/updating user profile:', error);
       }
     } catch (error) {
-      console.error('Error loading auth state:', error);
-      setAuthState(prev => ({ ...prev, isLoading: false }));
+      console.error('Error in createOrUpdateUserProfile:', error);
     }
   };
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      // Simple validation - in a real app, you'd validate against a backend
       if (!email || !password) {
         return { success: false, error: 'Email and password are required' };
       }
 
-      if (password.length < 6) {
-        return { success: false, error: 'Password must be at least 6 characters' };
-      }
-
-      // Create a mock user
-      const user: User = {
-        id: Date.now().toString(),
-        email: email.toLowerCase(),
-        name: email.split('@')[0], // Use email prefix as name
-      };
-
-      // Save auth state
-      const authData = { user };
-      await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData));
-
-      setAuthState({
-        isAuthenticated: true,
-        user,
-        isLoading: false,
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.toLowerCase().trim(),
+        password,
       });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
 
       return { success: true };
     } catch (error) {
       console.error('Login error:', error);
       return { success: false, error: 'Login failed. Please try again.' };
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
-      setAuthState({
-        isAuthenticated: false,
-        user: null,
-        isLoading: false,
-      });
-      // Redirect to login screen
-      router.replace('/(auth)/login');
-    } catch (error) {
-      console.error('Logout error:', error);
     }
   };
 
@@ -106,22 +104,27 @@ export const useAuth = () => {
         return { success: false, error: 'Password must be at least 6 characters' };
       }
 
-      // Create user
-      const user: User = {
-        id: Date.now().toString(),
-        email: email.toLowerCase(),
-        name: name.trim(),
-      };
-
-      // Save auth state
-      const authData = { user };
-      await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData));
-
-      setAuthState({
-        isAuthenticated: true,
-        user,
-        isLoading: false,
+      const { data, error } = await supabase.auth.signUp({
+        email: email.toLowerCase().trim(),
+        password,
+        options: {
+          data: {
+            display_name: name.trim(),
+          },
+        },
       });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      // Check if user needs to confirm email
+      if (data.user && !data.session) {
+        return { 
+          success: false, 
+          error: 'Please check your email and click the confirmation link to complete registration.' 
+        };
+      }
 
       return { success: true };
     } catch (error) {
@@ -130,10 +133,43 @@ export const useAuth = () => {
     }
   };
 
+  const logout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Logout error:', error);
+      }
+      // The auth state change listener will handle updating the state
+      router.replace('/(auth)/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  const resetPassword = async (email: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      if (!email) {
+        return { success: false, error: 'Email is required' };
+      }
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email.toLowerCase().trim());
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Password reset error:', error);
+      return { success: false, error: 'Password reset failed. Please try again.' };
+    }
+  };
+
   return {
     ...authState,
     login,
     logout,
     register,
+    resetPassword,
   };
 };
