@@ -95,6 +95,11 @@ export default function ChatScreen() {
       }));
       setMessages(loadedMessages);
       setConversationStarted(true);
+      
+      // Scroll to bottom when loading conversation history
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: false });
+      }, 100);
     } else if (!conversationId) {
       // Clear messages for new conversation
       setMessages([]);
@@ -114,7 +119,7 @@ export default function ChatScreen() {
     if (!messageText) return;
     if (isLoading) return;
 
-    let conversationIdToUse = currentConversationId;
+    let conversationIdToUse = currentConversationId || conversationId;
 
     // Create new conversation if this is the first message
     if (!conversationIdToUse) {
@@ -347,7 +352,9 @@ export default function ChatScreen() {
           <View style={styles.headerLogoContainer}>
             <Image source={require('../../assets/images/logo2.jpg')} style={styles.headerLogoImage} />
           </View>
-          <Text style={styles.headerTitle}>Lotus Guide</Text>
+          <Text style={styles.headerTitle}>
+            {conversationId ? 'Continue Chat' : 'Lotus Guide'}
+          </Text>
         </View>
 
         <ScrollView

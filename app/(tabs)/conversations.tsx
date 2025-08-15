@@ -32,7 +32,10 @@ export default function ConversationsScreen() {
   };
 
   const handleOpenConversation = (conversationId: string) => {
-    router.push({ pathname: '/chat', params: { conversationId } });
+    router.push({ 
+      pathname: '/(tabs)/chat', 
+      params: { conversationId } 
+    });
   };
 
   const handleDeleteConversation = (conversationId: string, title: string) => {
