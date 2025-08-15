@@ -47,7 +47,7 @@ export const useMessages = (conversationId: string | null) => {
     try {
       console.log('Saving message to database:', {
         conversationId,
-        content: content.substring(0, 50) + '...',
+        content: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
         isUser,
         hasGuidanceData: !!guidanceData
       });
@@ -65,6 +65,12 @@ export const useMessages = (conversationId: string | null) => {
 
       if (error) {
         console.error('Supabase error saving message:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         throw error;
       }
 
@@ -76,7 +82,7 @@ export const useMessages = (conversationId: string | null) => {
       return data;
     } catch (err) {
       console.error('Error adding message:', err);
-      setError('Failed to save message');
+      setError(`Failed to save message: ${err instanceof Error ? err.message : 'Unknown error'}`);
       return null;
     }
   };

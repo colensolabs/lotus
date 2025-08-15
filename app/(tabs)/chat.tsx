@@ -149,7 +149,12 @@ export default function ChatScreen() {
     // Save user message to database immediately
     try {
       if (conversationIdToUse) {
-        await addMessage(messageText, true);
+        const savedUserMessage = await addMessage(messageText, true);
+        if (!savedUserMessage) {
+          console.error('Failed to save user message to database');
+        } else {
+          console.log('User message saved successfully:', savedUserMessage.id);
+        }
       }
     } catch (error) {
       console.error('Error saving user message:', error);
@@ -208,7 +213,12 @@ export default function ChatScreen() {
             ? guidance.simpleResponse 
             : guidance.intro;
             
-          await addMessage(messageContent, false, guidanceData);
+          const savedBotMessage = await addMessage(messageContent, false, guidanceData);
+          if (!savedBotMessage) {
+            console.error('Failed to save bot message to database');
+          } else {
+            console.log('Bot message saved successfully:', savedBotMessage.id);
+          }
           
           // Update conversation preview and stats
           await updateConversation(conversationIdToUse, {
@@ -218,6 +228,7 @@ export default function ChatScreen() {
         }
       } catch (error) {
         console.error('Error saving bot message:', error);
+        console.error('Bot message save error details:', error);
       }
 
       if (!conversationStarted) {
