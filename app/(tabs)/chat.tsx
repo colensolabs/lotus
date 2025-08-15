@@ -110,12 +110,18 @@ export default function ChatScreen() {
     }
   }, [conversationId, dbMessages]);
   useEffect(() => {
-    // Only handle initialPrompt for brand new conversations (no conversationId and no existing messages)
-    if (initialPrompt && typeof initialPrompt === 'string' && !conversationId && messages.length === 0) {
+    // NEVER handle initialPrompt if there's a conversationId (old chat)
+    if (conversationId) return;
+    
+    // NEVER handle initialPrompt if there are any database messages (old chat)
+    if (dbMessages.length > 0) return;
+    
+    // Only handle initialPrompt for completely new conversations
+    if (initialPrompt && typeof initialPrompt === 'string' && messages.length === 0) {
       handleSendMessage(initialPrompt);
       setConversationStarted(true);
     }
-  }, [initialPrompt, conversationId, messages.length]);
+  }, [initialPrompt, conversationId, dbMessages.length, messages.length]);
 
   const handleSendMessage = async (text?: string) => {
     const messageText = text || inputText.trim();
