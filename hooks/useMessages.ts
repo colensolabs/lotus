@@ -45,11 +45,12 @@ export const useMessages = (conversationId: string | null) => {
     if (!conversationId) return null;
 
     try {
-      console.log('Saving message to database:', {
+      console.log('Attempting to save message:', {
         conversationId,
-        content: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
+        contentLength: content.length,
         isUser,
-        hasGuidanceData: !!guidanceData
+        hasGuidanceData: !!guidanceData,
+        guidanceDataType: typeof guidanceData
       });
       
       const { data, error } = await supabase
@@ -64,25 +65,42 @@ export const useMessages = (conversationId: string | null) => {
         .single();
 
       if (error) {
-        console.error('Supabase error saving message:', error);
-        console.error('Error details:', {
+        console.error('Supabase INSERT error:', {
           message: error.message,
           details: error.details,
           hint: error.hint,
-          code: error.code
+          code: error.code,
+          conversationId,
+          isUser,
+          contentLength: content.length
         });
         throw error;
       }
 
-      console.log('Message saved successfully:', data.id);
+      if (!data) {
+        console.error('No data returned from insert operation');
+        throw new Error('No data returned from database');
+      }
+
+      console.log('Message saved successfully:', {
+        messageId: data.id,
+        conversationId: data.conversation_id,
+        isUser: data.is_user
+      });
       
       // Add to local state
       setMessages(prev => [...prev, data]);
       
       return data;
     } catch (err) {
-      console.error('Error adding message:', err);
-      setError(`Failed to save message: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      console.error('Complete error in addMessage:', {
+        error: err,
+        errorMessage: err instanceof Error ? err.message : 'Unknown error',
+        conversationId,
+        isUser,
+        stack: err instanceof Error ? err.stack : undefined
+      });
+      setError(`Database error: ${err instanceof Error ? err.message : 'Unknown error'}`);
       return null;
     }
   };

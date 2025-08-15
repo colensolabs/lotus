@@ -149,15 +149,18 @@ export default function ChatScreen() {
     // Save user message to database immediately
     try {
       if (conversationIdToUse) {
+        console.log('About to save user message with conversationId:', conversationIdToUse);
         const savedUserMessage = await addMessage(messageText, true);
-        if (!savedUserMessage) {
-          console.error('Failed to save user message to database');
+        if (savedUserMessage) {
+          console.log('User message saved successfully');
         } else {
-          console.log('User message saved successfully:', savedUserMessage.id);
+          console.error('addMessage returned null for user message');
         }
+      } else {
+        console.error('No conversationId available for saving user message');
       }
     } catch (error) {
-      console.error('Error saving user message:', error);
+      console.error('Exception while saving user message:', error);
     }
 
     // Determine if this is a follow-up message
