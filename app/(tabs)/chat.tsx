@@ -98,7 +98,7 @@ export default function ChatScreen() {
           guidance: msg.guidance_data?.guidance || undefined,
           simpleResponse: msg.guidance_data?.simpleResponse || undefined,
           isStreaming: false,
-          isCancelled: false,
+          isCancelled: true, // This ensures no streaming animation for historical messages
         }));
         setMessages(loadedMessages);
         setConversationStarted(true);
@@ -404,6 +404,7 @@ export default function ChatScreen() {
             <StreamingGuidance
               guidance={message.guidance}
               speed={speedValue}
+              isCancelled={message.isCancelled}
             />
           )}
         </View>
