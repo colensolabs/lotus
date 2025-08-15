@@ -243,77 +243,6 @@ export default function ChatScreen() {
     }
   };
 
-        const messageId = (Date.now() + 1).toString();
-        
-        let botMessage: Message;
-        
-        if (guidance.isFollowUp && guidance.simpleResponse) {
-          // Follow-up response - simple format
-          botMessage = {
-            id: messageId,
-            text: guidance.simpleResponse,
-            isUser: false,
-            timestamp: new Date(),
-            isStreaming: true,
-            isFollowUp: true,
-            simpleResponse: guidance.simpleResponse,
-          };
-        } else {
-          // Initial structured response
-          botMessage = {
-            id: messageId,
-            text: guidance.intro,
-            isUser: false,
-            timestamp: new Date(),
-            isStreaming: true,
-            guidance,
-          };
-        }
-        
-        setMessages(prev => [...prev, botMessage]);
-        setStreamingMessageId(messageId);
-        
-        // Save bot message to database
-        if (conversationIdToUse) {
-          const guidanceData = guidance.isFollowUp && guidance.simpleResponse 
-            ? {
-                isFollowUp: true,
-                simpleResponse: guidance.simpleResponse,
-              }
-            : {
-                isFollowUp: false,
-                guidance,
-              };
-          
-          const messageContent = guidance.isFollowUp && guidance.simpleResponse 
-            ? guidance.simpleResponse 
-            : guidance.intro;
-            
-          await addMessage(messageContent, false, guidanceData);
-          
-          // Update conversation preview
-          await updateConversation(conversationIdToUse, {
-            preview: messageText.substring(0, 100),
-            last_message_at: new Date().toISOString(),
-          });
-        }
-
-        if (!conversationStarted) {
-          setConversationStarted(true);
-        }
-      })
-      .catch((error) => {
-        console.error('API Error:', error);
-        Alert.alert(
-          'Error',
-          'Failed to get guidance. Please try again.'
-        );
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  };
-
   const handleStreamingComplete = (messageId: string) => {
     setMessages(prev => 
       prev.map(msg => 
@@ -687,6 +616,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  inputContainerIOS: {},
   textInput: {
     flex: 1,
     borderWidth: 1,
