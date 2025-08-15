@@ -111,7 +111,8 @@ export default function ChatScreen() {
       setHasProcessedInitialSetup(true);
     } else if (!hasProcessedInitialSetup && initialPrompt && typeof initialPrompt === 'string') {
       // This is a new conversation with an initial prompt
-      handleSendMessage(initialPrompt);
+      // TEMPORARILY DISABLED - handleSendMessage(initialPrompt);
+      console.log('Initial prompt disabled:', initialPrompt);
       setConversationStarted(true);
       setHasProcessedInitialSetup(true);
     } else if (!hasProcessedInitialSetup) {
@@ -198,7 +199,20 @@ export default function ChatScreen() {
     const isFollowUp = conversationStarted && messages.length > 0;
 
     try {
-      const guidance = await getBuddhistGuidance(messageText, isFollowUp);
+      // TEMPORARILY DISABLED - const guidance = await getBuddhistGuidance(messageText, isFollowUp);
+      const guidance = {
+        intro: "This is a test response - API calls are temporarily disabled",
+        practicalSteps: "• Test step 1\n• Test step 2\n• Test step 3",
+        reflection: "This is a test reflection",
+        scripture: {
+          text: "Test scripture text",
+          source: "Test Source",
+          explanation: "Test explanation"
+        },
+        outro: "Test outro message",
+        isFollowUp: isFollowUp,
+        simpleResponse: isFollowUp ? "This is a test follow-up response" : undefined
+      };
       
       const messageId = (Date.now() + 1).toString();
       
