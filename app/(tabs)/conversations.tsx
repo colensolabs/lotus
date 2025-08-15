@@ -8,16 +8,23 @@ import { useConversations } from '@/hooks/useConversations';
 export default function ConversationsScreen() {
   const { conversations, isLoading, fetchConversations, deleteConversation } = useConversations();
   const [refreshing, setRefreshing] = useState(false);
-  const hasInitiallyFetched = useRef(false);
+  const [hasInitialLoad, setHasInitialLoad] = useState(false);
 
-  // Refresh conversations every time the screen comes into focus
+  // Initial load when component mounts
+  useEffect(() => {
+    if (!hasInitialLoad) {
+      fetchConversations();
+      setHasInitialLoad(true);
+    }
+  }, [hasInitialLoad]);
+
+  // Refresh conversations when screen comes into focus (after initial load)
   useFocusEffect(
     useCallback(() => {
-      if (!hasInitiallyFetched.current) {
+      if (hasInitialLoad) {
         fetchConversations();
-        hasInitiallyFetched.current = true;
       }
-    }, [])
+    }, [hasInitialLoad])
   );
 
   const handleRefresh = async () => {
