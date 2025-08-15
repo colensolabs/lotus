@@ -110,11 +110,12 @@ export default function ChatScreen() {
     }
   }, [conversationId, dbMessages]);
   useEffect(() => {
-    if (initialPrompt && typeof initialPrompt === 'string' && !conversationId) {
+    // Only handle initialPrompt for brand new conversations (no conversationId and no existing messages)
+    if (initialPrompt && typeof initialPrompt === 'string' && !conversationId && messages.length === 0) {
       handleSendMessage(initialPrompt);
       setConversationStarted(true);
     }
-  }, [initialPrompt, conversationId]);
+  }, [initialPrompt, conversationId, messages.length]);
 
   const handleSendMessage = async (text?: string) => {
     const messageText = text || inputText.trim();
