@@ -64,6 +64,9 @@ export default function ChatScreen() {
     initialPrompt?: string; 
     conversationId?: string;
   }>();
+  
+  console.log('💬 Chat: Component rendered with params:', { initialPrompt, conversationId });
+  
   const { speedValue } = useStreamingSpeed();
   const { createConversation, updateConversation } = useConversations();
   const { messages: dbMessages, addMessageToConversation, clearMessages } = useMessages(conversationId || null);
@@ -85,33 +88,52 @@ export default function ChatScreen() {
   }, []);
 
   useEffect(() => {
+    console.log('💬 Chat: Initial setup effect running', { 
+      hasProcessedInitialSetup, 
+      conversationId, 
+      initialPrompt: initialPrompt ? initialPrompt.substring(0, 50) + '...' : 'none'
+    });
+    
     if (!hasProcessedInitialSetup) {
       if (conversationId) {
+        console.log('💬 Chat: Setting up existing conversation');
         // This is an existing conversation
         setCurrentConversationId(conversationId);
         setConversationStarted(true);
       } else if (initialPrompt && typeof initialPrompt === 'string') {
+        console.log('💬 Chat: Setting up new conversation with initial prompt');
         // This is a new conversation with an initial prompt
         setCurrentConversationId(null);
         setMessages([]);
         setConversationStarted(false);
         // Automatically send the initial prompt
+        console.log('💬 Chat: Scheduling initial prompt send in 100ms');
         setTimeout(() => {
+          console.log('💬 Chat: About to send initial prompt:', initialPrompt);
           handleSendMessage(initialPrompt);
         }, 100);
       } else {
+        console.log('💬 Chat: Setting up completely new conversation');
         // This is a completely new conversation with no initial prompt
         setCurrentConversationId(null);
         setMessages([]);
         setConversationStarted(false);
       }
+      console.log('💬 Chat: Marking initial setup as processed');
       setHasProcessedInitialSetup(true);
     }
   }, [conversationId, initialPrompt, hasProcessedInitialSetup, handleSendMessage]);
 
   // Reset when navigating to a new conversation (no conversationId)
   useEffect(() => {
+    console.log('💬 Chat: Reset effect running', { 
+      conversationId, 
+      hasProcessedInitialSetup,
+      messagesLength: messages.length 
+    });
+    
     if (!conversationId && hasProcessedInitialSetup) {
+      console.log('💬 Chat: Resetting for new conversation');
       setCurrentConversationId(null);
       setMessages([]);
       setConversationStarted(false);
@@ -121,7 +143,13 @@ export default function ChatScreen() {
 
   // Separate effect for loading messages when conversationId changes
   useEffect(() => {
+    console.log('💬 Chat: DB messages effect running', { 
+      conversationId, 
+      dbMessagesLength: dbMessages.length 
+    });
+    
     if (conversationId && dbMessages.length > 0) {
+      console.log('💬 Chat: Loading messages from database');
       const loadedMessages: Message[] = dbMessages.map(msg => ({
         id: msg.id,
         text: msg.content,
@@ -176,6 +204,13 @@ export default function ChatScreen() {
 
   const handleSendMessage = async (text?: string) => {
     const messageText = text || inputText.trim();
+    console.log('💬 Chat: handleSendMessage called with:', { 
+      text, 
+      inputText: inputText.substring(0, 30) + '...', 
+      messageText: messageText.substring(0, 30) + '...',
+      isLoading 
+    });
+    
     if (!messageText) return;
     if (isLoading) return;
 
@@ -338,6 +373,7 @@ export default function ChatScreen() {
   };
 
   const handleSuggestionPress = (suggestion: string) => {
+    console.log('💬 Chat: Suggestion pressed:', suggestion.substring(0, 50) + '...');
     handleSendMessage(suggestion);
     setConversationStarted(true);
   };

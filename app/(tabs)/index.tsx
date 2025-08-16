@@ -23,9 +23,12 @@ const examplePrompts = [
 
 export default function HomeScreen() {
   const handleStartChat = (prompt?: string) => {
+    console.log('🏠 Home: handleStartChat called with prompt:', prompt);
     if (prompt) {
+      console.log('🏠 Home: Navigating to chat with initialPrompt');
       router.push({ pathname: '/(tabs)/chat', params: { initialPrompt: prompt } });
     } else {
+      console.log('🏠 Home: Navigating to chat without prompt');
       router.push('/(tabs)/chat');
     }
   };
