@@ -51,14 +51,20 @@ export const useConversations = () => {
   const createConversation = async (title: string, firstMessage?: string): Promise<string | null> => {
     if (!user) return null;
 
+    console.log('=== Starting conversation creation ===');
+    console.log('User:', user.id, user.email);
+    console.log('Title:', title);
+    console.log('First message:', firstMessage);
     // Ensure user profile exists before creating conversation
     try {
+      console.log('Checking user profile...');
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('id')
         .eq('id', user.id)
         .single();
 
+      console.log('Profile check result:', { profile, profileError });
       if (profileError || !profile) {
         console.log('User profile not found, creating one...');
         const { error: createProfileError } = await supabase
@@ -69,6 +75,7 @@ export const useConversations = () => {
             display_name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
           });
         
+        console.log('Profile creation result:', { createProfileError });
         if (createProfileError) {
           console.error('Failed to create user profile:', createProfileError);
           throw new Error('Failed to create user profile');
@@ -83,18 +90,24 @@ export const useConversations = () => {
     try {
       console.log('Creating conversation:', { title, userId: user.id, firstMessage });
       
+      const insertData = {
+        user_id: user.id,
+        title,
+        preview: firstMessage ? firstMessage.substring(0, 100) : null,
+        message_count: 0,
+        last_message_at: new Date().toISOString(),
+      };
+      console.log('Insert data:', insertData);
+
       const { data, error } = await supabase
         .from('conversations')
-        .insert({
-          user_id: user.id,
-          title,
-          preview: firstMessage ? firstMessage.substring(0, 100) : null,
-          message_count: 0,
-          last_message_at: new Date().toISOString(),
-        })
+        .insert(insertData)
         .select('*')
         .single();
 
+      console.log('Raw Supabase response:', { data, error });
+      console.log('Data type:', typeof data);
+      console.log('Data keys:', data ? Object.keys(data) : 'no data');
       if (error) {
         console.error('Supabase error creating conversation:', {
           error,
@@ -111,6 +124,9 @@ export const useConversations = () => {
         throw new Error('No data returned from conversation creation');
       }
 
+      console.log('Conversation data received:', data);
+      console.log('Conversation ID:', data.id);
+      console.log('ID type:', typeof data.id);
       if (!data.id) {
         console.error('Conversation created but no data returned:', data);
         throw new Error('Conversation created but no ID returned');
