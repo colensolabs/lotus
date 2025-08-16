@@ -49,9 +49,10 @@ export const useConversations = () => {
   };
 
   const createConversation = async (title: string, firstMessage?: string): Promise<string | null> => {
-    console.log('🚀 createConversation called with:', { title, firstMessage, userId: user?.id });
+    console.log('🚀 createConversation called with:', { title, firstMessage, user: user, userId: user?.id });
     
     if (!user) return null;
+      console.log('❌ No user found in createConversation');
 
     try {
       // Check if user is actually authenticated
@@ -63,12 +64,17 @@ export const useConversations = () => {
         return null;
       }
 
+      if (!session.user?.id) {
+        console.log('❌ Session exists but user has no ID:', session.user);
+        return null;
+      }
+
       // Step 1: Check current user profile
       console.log('🔍 Step 1: Checking user profile...');
       const { data: profile, error: profileCheckError } = await supabase
         .from('user_profiles')
         .select('id, email')
-        .eq('id', user.id)
+        .eq('id', session.user.id)
         .single();
       // Step 2: Create profile if it doesn't exist
       if (!profile) {
@@ -79,9 +85,9 @@ export const useConversations = () => {
             id: user.id,
             email: user.email!,
             display_name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
-          })
-          .select('id')
-          .single();
+            id: session.user.id,
+            email: session.user.email!,
+            display_name: session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || 'User',
 
         console.log('📝 Profile creation result:', { newProfile, createProfileError });
         
@@ -97,7 +103,7 @@ export const useConversations = () => {
       const conversationData = {
         user_id: user.id,
         title,
-        preview: firstMessage ? firstMessage.substring(0, 100) : null,
+        user_id: session.user.id,
       };
       console.log('📝 Conversation data:', conversationData);
 
@@ -149,6 +155,11 @@ export const useConversations = () => {
       return null;
     }
   };
+    if (!user.id) {
+      console.log('❌ User exists but has no ID:', user);
+      return null;
+    }
+
 
   const updateConversation = async (conversationId: string, updates: Partial<Conversation>) => {
     try {
