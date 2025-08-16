@@ -36,7 +36,7 @@ export const PreferencesSetup: React.FC<PreferencesSetupProps> = ({
   const handleSave = async () => {
     setIsLoading(true);
     
-    const result = await createOrUpdatePreferences(selectedTopics, selectedTradition);
+    const result = await createOrUpdatePreferences(selectedTopics, selectedTradition, true);
     
     setIsLoading(false);
     

@@ -15,6 +15,7 @@ export interface Database {
           user_id: string
           topics_of_interest: string[]
           buddhist_tradition: 'secular' | 'general_buddhist' | 'theravada' | 'mahayana' | 'tibetan' | 'zen'
+          save_conversations: boolean | null
           created_at: string | null
           updated_at: string | null
         }
@@ -23,6 +24,7 @@ export interface Database {
           user_id: string
           topics_of_interest?: string[]
           buddhist_tradition?: 'secular' | 'general_buddhist' | 'theravada' | 'mahayana' | 'tibetan' | 'zen'
+          save_conversations?: boolean | null
           created_at?: string | null
           updated_at?: string | null
         }
@@ -31,6 +33,7 @@ export interface Database {
           user_id?: string
           topics_of_interest?: string[]
           buddhist_tradition?: 'secular' | 'general_buddhist' | 'theravada' | 'mahayana' | 'tibetan' | 'zen'
+          save_conversations?: boolean | null
           created_at?: string | null
           updated_at?: string | null
         }

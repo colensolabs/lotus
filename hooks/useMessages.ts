@@ -46,9 +46,10 @@ export const useMessages = (conversationId: string | null) => {
   };
 
   const addMessageToConversation = async (conversationId: string, content: string, isUser: boolean, guidanceData?: any): Promise<Message | null> => {
+    // If no conversationId, it means privacy is enabled - don't save
     if (!conversationId) {
-      console.error('addMessageToConversation called without conversationId');
-      throw new Error('No conversation ID provided');
+      console.log('No conversation ID - privacy enabled, not saving message');
+      return null;
     }
 
     try {

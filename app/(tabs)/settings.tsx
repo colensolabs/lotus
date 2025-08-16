@@ -7,8 +7,11 @@ import { router } from 'expo-router';
 import { useStreamingSpeed, StreamingSpeed } from '@/hooks/useStreamingSpeed';
 import { useHapticSettings } from '@/hooks/useHapticSettings';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserPreferences } from '@/hooks/useUserPreferences';
+import { useConversations } from '@/hooks/useConversations';
 import { triggerSelectionHaptic } from '@/utils/haptics';
 import { supabase } from '@/lib/supabase';
+import { Alert } from 'react-native';
 
 export default function SettingsScreen() {
   const { speed, updateSpeed } = useStreamingSpeed();
@@ -16,7 +19,8 @@ export default function SettingsScreen() {
   const { user, logout } = useAuth();
   const [userProfile, setUserProfile] = useState<{ display_name: string | null; email: string } | null>(null);
   const [notifications, setNotifications] = useState(true);
-  const [saveConversations, setSaveConversations] = useState(false);
+  const { preferences: userPreferences, updateSaveConversations } = useUserPreferences();
+  const { conversations } = useConversations();
 
   useEffect(() => {
     if (user) {
@@ -51,6 +55,52 @@ export default function SettingsScreen() {
         display_name: user.user_metadata?.display_name || null,
         email: user.email || ''
       });
+    }
+  };
+
+  const handlePrivacyToggle = async (newValue: boolean) => {
+    // If turning privacy ON (don't save conversations)
+    if (!newValue) {
+      // Check if user has existing conversations
+      if (conversations.length > 0) {
+        Alert.alert(
+          'Delete Existing Conversations?',
+          `You have ${conversations.length} saved conversations. Turning on privacy will delete all existing conversations and prevent future conversations from being saved. This cannot be undone.`,
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel',
+            },
+            {
+              text: 'Delete All',
+              style: 'destructive',
+              onPress: async () => {
+                // Delete all conversations
+                try {
+                  const { error } = await supabase
+                    .from('conversations')
+                    .update({ is_archived: true })
+                    .eq('user_id', user?.id);
+
+                  if (error) throw error;
+
+                  // Update the preference
+                  await updateSaveConversations(false);
+                } catch (error) {
+                  console.error('Error deleting conversations:', error);
+                  Alert.alert('Error', 'Failed to delete conversations');
+                }
+              },
+            },
+          ]
+        );
+      } else {
+        // No existing conversations, just update the preference
+        await updateSaveConversations(false);
+      }
+    } else {
+      // Turning privacy OFF (save conversations) - no confirmation needed
+      await updateSaveConversations(true);
     }
   };
 
@@ -196,8 +246,8 @@ export default function SettingsScreen() {
           subtitle="Save conversations locally"
           rightElement={
             <Switch
-              value={saveConversations}
-              onValueChange={setSaveConversations}
+              value={userPreferences?.save_conversations ?? true}
+              onValueChange={handlePrivacyToggle}
               trackColor={{ false: '#E8E8E8', true: '#D4AF37' }}
               thumbColor="#FEFEFE"
             />

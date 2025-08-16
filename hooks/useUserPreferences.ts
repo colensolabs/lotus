@@ -82,21 +82,28 @@ export const useUserPreferences = () => {
 
   const createOrUpdatePreferences = async (
     topicsOfInterest: string[],
-    buddhistTradition: BuddhistTradition
+    buddhistTradition: BuddhistTradition,
+    saveConversations?: boolean
   ): Promise<{ success: boolean; error?: string }> => {
     if (!user) {
       return { success: false, error: 'User not authenticated' };
     }
 
     try {
+      const updateData: any = {
+        user_id: user.id,
+        topics_of_interest: topicsOfInterest,
+        buddhist_tradition: buddhistTradition,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (saveConversations !== undefined) {
+        updateData.save_conversations = saveConversations;
+      }
+
       const { data, error } = await supabase
         .from('user_preferences')
-        .upsert({
-          user_id: user.id,
-          topics_of_interest: topicsOfInterest,
-          buddhist_tradition: buddhistTradition,
-          updated_at: new Date().toISOString(),
-        }, {
+        .upsert(updateData, {
           onConflict: 'user_id'
         })
         .select()
@@ -129,6 +136,12 @@ export const useUserPreferences = () => {
     return createOrUpdatePreferences(topics, tradition);
   };
 
+  const updateSaveConversations = async (saveConversations: boolean): Promise<{ success: boolean; error?: string }> => {
+    const topics = preferences?.topics_of_interest || [];
+    const tradition = preferences?.buddhist_tradition || 'general_buddhist';
+    return createOrUpdatePreferences(topics, tradition, saveConversations);
+  };
+
   return {
     preferences,
     isLoading,
@@ -137,5 +150,6 @@ export const useUserPreferences = () => {
     createOrUpdatePreferences,
     updateTopics,
     updateTradition,
+    updateSaveConversations,
   };
 };

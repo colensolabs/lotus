@@ -372,7 +372,11 @@ export default function ChatScreen() {
     try {
       if (conversationIdToUse) {
         const savedUserMessage = await addMessageToConversation(conversationIdToUse, messageText, true);
-        console.log('User message saved successfully');
+        if (savedUserMessage) {
+          console.log('User message saved successfully');
+        } else {
+          console.log('User message not saved - privacy enabled');
+        }
       }
     } catch (error) {
       console.error('Failed to save user message:', error);
@@ -463,15 +467,15 @@ export default function ChatScreen() {
           const savedBotMessage = await addMessageToConversation(conversationIdToUse, messageContent, false, guidanceData);
           if (savedBotMessage) {
             console.log('Bot message saved successfully:', savedBotMessage.id);
+            
+            // Update conversation preview and stats only if message was saved
+            await updateConversation(conversationIdToUse, {
+              preview: messageText.substring(0, 100),
+              last_message_at: new Date().toISOString(),
+            });
           } else {
-            console.log('Bot message returned null - check database constraints');
+            console.log('Bot message not saved - privacy enabled');
           }
-          
-          // Update conversation preview and stats
-          await updateConversation(conversationIdToUse, {
-            preview: messageText.substring(0, 100),
-            last_message_at: new Date().toISOString(),
-          });
         }
       } catch (error) {
         console.error('Failed to save bot message:', error);
