@@ -269,6 +269,10 @@ Respond naturally without any special formatting or sections.
 // Singleton instance
 const apiInstance = new BuddhistGuidanceAPI();
 
-export const getBuddhistGuidance = async (message: string, isFollowUp: boolean = false): Promise<BuddhistGuidanceResponse> => {
-  return apiInstance.getBuddhistGuidance(message, isFollowUp);
+export const getBuddhistGuidance = async (
+  message: string, 
+  isFollowUp: boolean = false, 
+  userPreferences?: UserPreferences
+): Promise<BuddhistGuidanceResponse> => {
+  return apiInstance.getBuddhistGuidance(message, isFollowUp, userPreferences);
 };

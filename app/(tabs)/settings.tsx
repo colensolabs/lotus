@@ -1,8 +1,9 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 'react-native';
 import { Image } from 'react-native';
 import { useState, useEffect } from 'react';
-import { Bot as Lotus, Bell, Heart, MessageCircle, CircleHelp as HelpCircle, Star, Vibrate, User } from 'lucide-react-native';
+import { Bot as Lotus, Bell, Heart, MessageCircle, CircleHelp as HelpCircle, Star, Vibrate, User, Settings as SettingsIcon } from 'lucide-react-native';
 import { LogOut } from 'lucide-react-native';
+import { router } from 'expo-router';
 import { useStreamingSpeed, StreamingSpeed } from '@/hooks/useStreamingSpeed';
 import { useHapticSettings } from '@/hooks/useHapticSettings';
 import { useAuth } from '@/hooks/useAuth';
@@ -202,6 +203,17 @@ export default function SettingsScreen() {
             />
           }
           showArrow={false}
+        />
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Personalization</Text>
+        
+        <SettingsRow
+          icon={<User size={20} color="#D4AF37" strokeWidth={1.5} />}
+          title="Topics & Tradition"
+          subtitle="Customize your guidance experience"
+          onPress={() => router.push('/(tabs)/preferences')}
         />
       </View>
 

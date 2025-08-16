@@ -22,6 +22,7 @@ import { useStreamingSpeed } from '@/hooks/useStreamingSpeed';
 import { useConversations } from '@/hooks/useConversations';
 import { useMessages } from '@/hooks/useMessages';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserPreferences } from '@/hooks/useUserPreferences';
 
 const SUGGESTION_PROMPTS = [
 "How can I handle disagreements calmly and respectfully?",
@@ -74,6 +75,7 @@ export default function ChatScreen() {
   const { createConversation, updateConversation } = useConversations();
   const { messages: dbMessages, addMessageToConversation, clearMessages } = useMessages(conversationId || null);
   const { user } = useAuth();
+  const { preferences } = useUserPreferences();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -381,7 +383,7 @@ export default function ChatScreen() {
 
     try {
       console.log('Starting API call to getBuddhistGuidance...');
-      const guidance = await getBuddhistGuidance(messageText, isFollowUp);
+      const guidance = await getBuddhistGuidance(messageText, isFollowUp, preferences || undefined);
       console.log('API call completed successfully!');
       
       // Debug: Log the guidance response
