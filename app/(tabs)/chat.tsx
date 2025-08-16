@@ -95,8 +95,10 @@ export default function ChatScreen() {
         setCurrentConversationId(null);
         setMessages([]);
         setConversationStarted(false);
-        console.log('Initial prompt disabled:', initialPrompt);
-        setConversationStarted(true);
+        // Automatically send the initial prompt
+        setTimeout(() => {
+          handleSendMessage(initialPrompt);
+        }, 500);
       } else {
         // This is a completely new conversation with no initial prompt
         setCurrentConversationId(null);
