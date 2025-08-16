@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const STORAGE_KEY = 'haptic_feedback_enabled';
 
 export const useHapticSettings = () => {
-  const [isEnabled, setIsEnabled] = useState(true);
+  const [isEnabled, setIsEnabled] = useState(true); // Default to true (ON)
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

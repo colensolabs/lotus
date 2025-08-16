@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 'react-native';
 import { Image } from 'react-native';
 import { useState, useEffect } from 'react';
-import { Bot as Lotus, Bell, Heart, MessageCircle, CircleHelp as HelpCircle, Star, Vibrate, User, Settings as SettingsIcon } from 'lucide-react-native';
+import { Bot as Lotus, Bell, Heart, MessageCircle, CircleHelp as HelpCircle, Star, Vibrate, User, Settings as SettingsIcon, Shield } from 'lucide-react-native';
 import { LogOut } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useStreamingSpeed, StreamingSpeed } from '@/hooks/useStreamingSpeed';
@@ -15,12 +15,8 @@ import { Alert } from 'react-native';
 
 export default function SettingsScreen() {
   const { speed, updateSpeed } = useStreamingSpeed();
-  const { isEnabled: hapticsEnabled, updateSetting: updateHaptics } = useHapticSettings();
   const { user, logout } = useAuth();
   const [userProfile, setUserProfile] = useState<{ display_name: string | null; email: string } | null>(null);
-  const [notifications, setNotifications] = useState(true);
-  const { preferences: userPreferences, updateSaveConversations } = useUserPreferences();
-  const { conversations } = useConversations();
 
   useEffect(() => {
     if (user) {
@@ -58,53 +54,9 @@ export default function SettingsScreen() {
     }
   };
 
-  const handlePrivacyToggle = async (newValue: boolean) => {
-    // If turning privacy ON (don't save conversations)
-    if (!newValue) {
-      // Check if user has existing conversations
-      if (conversations.length > 0) {
-        Alert.alert(
-          'Delete Existing Conversations?',
-          `You have ${conversations.length} saved conversations. Turning on privacy will delete all existing conversations and prevent future conversations from being saved. This cannot be undone.`,
-          [
-            {
-              text: 'Cancel',
-              style: 'cancel',
-            },
-            {
-              text: 'Delete All',
-              style: 'destructive',
-              onPress: async () => {
-                // Delete all conversations
-                try {
-                  const { error } = await supabase
-                    .from('conversations')
-                    .update({ is_archived: true })
-                    .eq('user_id', user?.id);
 
-                  if (error) throw error;
 
-                  // Update the preference
-                  await updateSaveConversations(false);
-                } catch (error) {
-                  console.error('Error deleting conversations:', error);
-                  Alert.alert('Error', 'Failed to delete conversations');
-                }
-              },
-            },
-          ]
-        );
-      } else {
-        // No existing conversations, just update the preference
-        await updateSaveConversations(false);
-      }
-    } else {
-      // Turning privacy OFF (save conversations) - no confirmation needed
-      await updateSaveConversations(true);
-    }
-  };
-
-  const StreamingSpeedSelector = () => {
+    const StreamingSpeedSelector = () => {
     const speeds: { value: StreamingSpeed; label: string; description: string }[] = [
       { value: 'slow', label: 'Slow', description: '~15 chars/sec' },
       { value: 'normal', label: 'Normal', description: '~30 chars/sec' },
@@ -120,10 +72,14 @@ export default function SettingsScreen() {
               styles.speedOption,
               speed === speedOption.value && styles.speedOptionSelected
             ]}
-            onPress={() => updateSpeed(speedOption.value)}
+            onPress={() => {
+              updateSpeed(speedOption.value);
+              if (speed !== speedOption.value) {
+                triggerSelectionHaptic();
+              }
+            }}
             activeOpacity={0.7}
           >
-            {speed === speedOption.value && triggerSelectionHaptic()}
             <Text style={[
               styles.speedOptionLabel,
               speed === speedOption.value && styles.speedOptionLabelSelected
@@ -139,6 +95,123 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         ))}
       </View>
+    );
+  };
+
+  // Separate component for haptic toggle to isolate it
+  const HapticToggle = () => {
+    const { isEnabled: hapticsEnabled, updateSetting: updateHaptics } = useHapticSettings();
+    
+    return (
+      <SettingsRow
+        icon={<Vibrate size={20} color="#D4AF37" strokeWidth={1.5} />}
+        title="Haptic Feedback"
+        subtitle="Feel the typewriter effect"
+        rightElement={
+          <Switch
+            value={hapticsEnabled}
+            onValueChange={updateHaptics}
+            trackColor={{ false: '#E8E8E8', true: '#D4AF37' }}
+            thumbColor="#FEFEFE"
+          />
+        }
+        showArrow={false}
+      />
+    );
+  };
+
+  // Separate component for notifications toggle to isolate it
+  const NotificationsToggle = () => {
+    const [notifications, setNotifications] = useState(true);
+    
+    return (
+      <SettingsRow
+        icon={<Bell size={20} color="#D4AF37" strokeWidth={1.5} />}
+        title="Notifications"
+        subtitle="Daily wisdom and reminders"
+        rightElement={
+          <Switch
+            value={notifications}
+            onValueChange={setNotifications}
+            trackColor={{ false: '#E8E8E8', true: '#D4AF37' }}
+            thumbColor="#FEFEFE"
+          />
+        }
+        showArrow={false}
+      />
+    );
+  };
+
+    // Separate component for privacy toggle to isolate it
+  const PrivacyToggle = () => {
+    const { preferences: userPrefs, updateSaveConversations } = useUserPreferences();
+    const { conversations } = useConversations();
+    const { user } = useAuth();
+    
+    // Calculate the correct switch value directly from preferences (like haptic toggle)
+    const switchValue = !(userPrefs?.save_conversations ?? false);
+    
+    const handlePrivacyToggle = async (newValue: boolean) => {
+      console.log('Privacy toggle clicked:', { newValue, currentPrefs: userPrefs?.save_conversations });
+      
+      if (newValue) {
+        // Switch is ON - Turn privacy ON (don't save conversations)
+        if (conversations.length > 0) {
+          Alert.alert(
+            'Delete Existing Conversations?',
+            `You have ${conversations.length} saved conversations. Turning on privacy will delete all existing conversations and prevent future conversations from being saved. This cannot be undone.`,
+            [
+              {
+                text: 'Cancel',
+                style: 'cancel',
+              },
+              {
+                text: 'Delete All',
+                style: 'destructive',
+                onPress: async () => {
+                  try {
+                    const { error } = await supabase
+                      .from('conversations')
+                      .update({ is_archived: true })
+                      .eq('user_id', user?.id);
+
+                    if (error) throw error;
+                    await updateSaveConversations(false);
+                    console.log('Privacy enabled - conversations deleted');
+                  } catch (error) {
+                    console.error('Error deleting conversations:', error);
+                    Alert.alert('Error', 'Failed to delete conversations');
+                  }
+                },
+              },
+            ]
+          );
+        } else {
+          await updateSaveConversations(false);
+          console.log('Privacy enabled - no conversations to delete');
+        }
+      } else {
+        // Switch is OFF - Turn privacy OFF (save conversations)
+        await updateSaveConversations(true);
+        console.log('Privacy disabled - conversations will be saved');
+      }
+    };
+    
+    return (
+      <SettingsRow
+        icon={<Shield size={20} color="#D4AF37" strokeWidth={1.5} />}
+        title="Privacy Mode"
+        subtitle="Toggle OFF to save conversations, ON to delete them"
+        rightElement={
+          <Switch
+            value={switchValue}
+            onValueChange={handlePrivacyToggle}
+            trackColor={{ false: '#E8E8E8', true: '#D4AF37' }}
+            thumbColor="#FEFEFE"
+          />
+        }
+        showArrow={false}
+      />
     );
   };
 
@@ -207,53 +280,9 @@ export default function SettingsScreen() {
         </View>
         <StreamingSpeedSelector />
         
-        <SettingsRow
-          icon={<Vibrate size={20} color="#D4AF37" strokeWidth={1.5} />}
-          title="Haptic Feedback"
-          subtitle="Feel the typewriter effect"
-          rightElement={
-            <Switch
-              value={hapticsEnabled}
-              onValueChange={(value) => {
-                updateHaptics(value);
-                if (value) triggerSelectionHaptic();
-              }}
-              trackColor={{ false: '#E8E8E8', true: '#D4AF37' }}
-              thumbColor="#FEFEFE"
-            />
-          }
-          showArrow={false}
-        />
-        
-        <SettingsRow
-          icon={<Bell size={20} color="#D4AF37" strokeWidth={1.5} />}
-          title="Notifications"
-          subtitle="Daily wisdom and reminders"
-          rightElement={
-            <Switch
-              value={notifications}
-              onValueChange={setNotifications}
-              trackColor={{ false: '#E8E8E8', true: '#D4AF37' }}
-              thumbColor="#FEFEFE"
-            />
-          }
-          showArrow={false}
-        />
-
-        <SettingsRow
-          icon={<MessageCircle size={20} color="#D4AF37" strokeWidth={1.5} />}
-          title="Privacy"
-          subtitle="Save conversations locally"
-          rightElement={
-            <Switch
-              value={userPreferences?.save_conversations ?? true}
-              onValueChange={handlePrivacyToggle}
-              trackColor={{ false: '#E8E8E8', true: '#D4AF37' }}
-              thumbColor="#FEFEFE"
-            />
-          }
-          showArrow={false}
-        />
+        <HapticToggle />
+        <NotificationsToggle />
+        <PrivacyToggle />
       </View>
 
       <View style={styles.section}>
@@ -263,20 +292,13 @@ export default function SettingsScreen() {
           icon={<User size={20} color="#D4AF37" strokeWidth={1.5} />}
           title="Topics & Tradition"
           subtitle="Customize your guidance experience"
-          onPress={() => router.push('/(tabs)/preferences')}
+          onPress={() => router.push('/preferences')}
         />
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Support</Text>
         
-        <SettingsRow
-          icon={<Heart size={20} color="#F4A593" strokeWidth={1.5} />}
-          title="Connect with Teachers"
-          subtitle="Get personal guidance"
-          onPress={() => {}}
-        />
-
         <SettingsRow
           icon={<MessageCircle size={20} color="#F4A593" strokeWidth={1.5} />}
           title="Community"

@@ -9,8 +9,9 @@ import {
   Alert,
 } from 'react-native';
 import { Image } from 'react-native';
-import { Check, Save } from 'lucide-react-native';
+import { Check, Save, ArrowLeft } from 'lucide-react-native';
 import { useUserPreferences, AVAILABLE_TOPICS, BUDDHIST_TRADITIONS } from '@/hooks/useUserPreferences';
+import { router } from 'expo-router';
 
 export default function PreferencesScreen() {
   const { preferences, isLoading, createOrUpdatePreferences } = useUserPreferences();
@@ -41,10 +42,19 @@ export default function PreferencesScreen() {
     setIsSaving(false);
     
     if (result.success) {
-      Alert.alert('Success', 'Your preferences have been saved');
+      Alert.alert('Success', 'Your preferences have been saved', [
+        {
+          text: 'OK',
+          onPress: () => router.back()
+        }
+      ]);
     } else {
       Alert.alert('Error', result.error || 'Failed to save preferences');
     }
+  };
+
+  const handleExit = () => {
+    router.back();
   };
 
   if (isLoading) {
@@ -59,6 +69,9 @@ export default function PreferencesScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
+        <TouchableOpacity style={styles.exitButton} onPress={handleExit}>
+          <ArrowLeft size={24} color="#D4AF37" strokeWidth={2} />
+        </TouchableOpacity>
         <View style={styles.iconContainer}>
           <Image source={require('../../assets/images/logo2.jpg')} style={styles.logoImage} />
         </View>
@@ -154,6 +167,15 @@ export default function PreferencesScreen() {
             </>
           )}
         </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={styles.exitButtonSecondary}
+          onPress={handleExit}
+          activeOpacity={0.8}
+        >
+          <ArrowLeft size={20} color="#6B6B6B" strokeWidth={2} />
+          <Text style={styles.exitButtonText}>Back to Settings</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -183,6 +205,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     marginBottom: 32,
     alignItems: 'center',
+    position: 'relative',
+  },
+  exitButton: {
+    position: 'absolute',
+    top: 0,
+    left: 24,
+    zIndex: 1,
+    padding: 8,
   },
   iconContainer: {
     width: 80,
@@ -345,6 +375,19 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+    marginLeft: 8,
+  },
+  exitButtonSecondary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    marginTop: 12,
+  },
+  exitButtonText: {
+    color: '#6B6B6B',
+    fontSize: 16,
+    fontWeight: '500',
     marginLeft: 8,
   },
 });

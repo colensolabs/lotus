@@ -113,6 +113,7 @@ export const useUserPreferences = () => {
         throw error;
       }
 
+      console.log('createOrUpdatePreferences - data returned:', data);
       setPreferences(data);
       return { success: true };
     } catch (err) {
@@ -137,9 +138,12 @@ export const useUserPreferences = () => {
   };
 
   const updateSaveConversations = async (saveConversations: boolean): Promise<{ success: boolean; error?: string }> => {
+    console.log('updateSaveConversations called with:', saveConversations);
     const topics = preferences?.topics_of_interest || [];
     const tradition = preferences?.buddhist_tradition || 'general_buddhist';
-    return createOrUpdatePreferences(topics, tradition, saveConversations);
+    const result = await createOrUpdatePreferences(topics, tradition, saveConversations);
+    console.log('updateSaveConversations result:', result);
+    return result;
   };
 
   return {

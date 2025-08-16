@@ -238,29 +238,34 @@ export default function ChatScreen() {
       console.log('Creating conversation with authenticated user:', !!user);
       const newConversationId = await createConversation(title, exampleQuestion);
       if (!newConversationId) {
-        console.error('Failed to create conversation for example');
-        return;
+        // Privacy is enabled - continue without saving to database
+        console.log('Privacy enabled - continuing example without conversation ID');
+        setCurrentConversationId(null);
+      } else {
+        setCurrentConversationId(newConversationId);
       }
-      
-      setCurrentConversationId(newConversationId);
 
-      // Save messages to database
-      try {
-        await addMessageToConversation(newConversationId, exampleQuestion, true);
-        await addMessageToConversation(newConversationId, guidance.intro || 'Guidance response', false, {
-          isFollowUp: false,
-          guidance: guidance,
-        });
-        
-        // Update conversation stats
-        await updateConversation(newConversationId, {
-          preview: exampleQuestion.substring(0, 100),
-          last_message_at: new Date().toISOString(),
-        });
-        
-        console.log('Example conversation saved successfully');
-      } catch (error) {
-        console.error('Failed to save example conversation messages:', error);
+      // Save messages to database (only if conversation was created)
+      if (newConversationId) {
+        try {
+          await addMessageToConversation(newConversationId, exampleQuestion, true);
+          await addMessageToConversation(newConversationId, guidance.intro || 'Guidance response', false, {
+            isFollowUp: false,
+            guidance: guidance,
+          });
+          
+          // Update conversation stats
+          await updateConversation(newConversationId, {
+            preview: exampleQuestion.substring(0, 100),
+            last_message_at: new Date().toISOString(),
+          });
+          
+          console.log('Example conversation saved successfully');
+        } catch (error) {
+          console.error('Failed to save example conversation messages:', error);
+        }
+      } else {
+        console.log('Privacy enabled - example conversation not saved to database');
       }
     } catch (error) {
       console.error('Error handling example conversation:', error);
@@ -347,10 +352,12 @@ export default function ChatScreen() {
       
       conversationIdToUse = await createConversation(title, messageText);
       if (!conversationIdToUse) {
-        Alert.alert('Error', 'Failed to create conversation');
-        return;
+        // Privacy is enabled - continue without saving to database
+        console.log('Privacy enabled - continuing without conversation ID');
+        setCurrentConversationId(null);
+      } else {
+        setCurrentConversationId(conversationIdToUse);
       }
-      setCurrentConversationId(conversationIdToUse);
     }
 
     const userMessage: Message = {
