@@ -189,7 +189,8 @@ export default function ChatScreen() {
       
       if (!conversationIdToUse) {
         console.error('Failed to create conversation - no ID returned');
-        Alert.alert('Error', 'Failed to create conversation. Please check your connection and try again.');
+        Alert.alert('Error', 'Failed to create conversation. Please try logging out and back in, then try again.');
+        setIsLoading(false);
         return;
       }
       setCurrentConversationId(conversationIdToUse);

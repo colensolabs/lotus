@@ -51,6 +51,35 @@ export const useConversations = () => {
   const createConversation = async (title: string, firstMessage?: string): Promise<string | null> => {
     if (!user) return null;
 
+    // Ensure user profile exists before creating conversation
+    try {
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !profile) {
+        console.log('User profile not found, creating one...');
+        const { error: createProfileError } = await supabase
+          .from('user_profiles')
+          .upsert({
+            id: user.id,
+            email: user.email!,
+            display_name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
+          });
+        
+        if (createProfileError) {
+          console.error('Failed to create user profile:', createProfileError);
+          throw new Error('Failed to create user profile');
+        }
+      }
+    } catch (profileErr) {
+      console.error('Profile check/creation failed:', profileErr);
+      setError('Failed to verify user profile. Please try logging out and back in.');
+      return null;
+    }
+
     try {
       console.log('Creating conversation:', { title, userId: user.id, firstMessage });
       
@@ -77,6 +106,11 @@ export const useConversations = () => {
         throw error;
       }
 
+      if (!data || !data.id) {
+        console.error('Conversation created but no data returned:', data);
+        throw new Error('Conversation created but no ID returned');
+      }
+
       console.log('Conversation created successfully:', data.id);
       
       // Refresh conversations list
@@ -97,6 +131,8 @@ export const useConversations = () => {
           setError('Authentication error. Please try logging out and back in.');
         } else if (err.message.includes('violates foreign key constraint')) {
           setError('User profile error. Please try refreshing the app.');
+        } else if (err.message.includes('no ID returned')) {
+          setError('Database error. Please check your connection and try again.');
         } else {
           setError(`Failed to create conversation: ${err.message}`);
         }
