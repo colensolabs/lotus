@@ -82,126 +82,6 @@ export default function ChatScreen() {
   // Track if we've processed the initial setup
   const [hasProcessedInitialSetup, setHasProcessedInitialSetup] = useState(false);
 
-  useEffect(() => {
-    // Generate random suggestions on component mount
-    setSuggestions(getRandomSuggestions(2));
-  }, []);
-
-  useEffect(() => {
-    console.log('💬 Chat: Initial setup effect running', { 
-      hasProcessedInitialSetup, 
-      conversationId, 
-      initialPrompt: initialPrompt ? initialPrompt.substring(0, 50) + '...' : 'none'
-    });
-    
-    if (!hasProcessedInitialSetup) {
-      if (conversationId) {
-        console.log('💬 Chat: Setting up existing conversation');
-        // This is an existing conversation
-        setCurrentConversationId(conversationId);
-        setConversationStarted(true);
-      } else if (initialPrompt && typeof initialPrompt === 'string') {
-        console.log('💬 Chat: Setting up new conversation with initial prompt');
-        // This is a new conversation with an initial prompt
-        setCurrentConversationId(null);
-        setMessages([]);
-        setConversationStarted(false);
-        // Automatically send the initial prompt
-        console.log('💬 Chat: Scheduling initial prompt send in 100ms');
-        setTimeout(() => {
-          console.log('💬 Chat: About to send initial prompt:', initialPrompt);
-          handleSendMessage(initialPrompt);
-        }, 100);
-      } else {
-        console.log('💬 Chat: Setting up completely new conversation');
-        // This is a completely new conversation with no initial prompt
-        setCurrentConversationId(null);
-        setMessages([]);
-        setConversationStarted(false);
-      }
-      console.log('💬 Chat: Marking initial setup as processed');
-      setHasProcessedInitialSetup(true);
-    }
-  }, [conversationId, initialPrompt, hasProcessedInitialSetup, handleSendMessage]);
-
-  // Reset when navigating to a new conversation (no conversationId)
-  useEffect(() => {
-    console.log('💬 Chat: Reset effect running', { 
-      conversationId, 
-      hasProcessedInitialSetup,
-      messagesLength: messages.length 
-    });
-    
-    if (!conversationId && hasProcessedInitialSetup) {
-      console.log('💬 Chat: Resetting for new conversation');
-      setCurrentConversationId(null);
-      setMessages([]);
-      setConversationStarted(false);
-      setSuggestions(getRandomSuggestions(2));
-    }
-  }, [conversationId, initialPrompt, hasProcessedInitialSetup]);
-
-  // Separate effect for loading messages when conversationId changes
-  useEffect(() => {
-    console.log('💬 Chat: DB messages effect running', { 
-      conversationId, 
-      dbMessagesLength: dbMessages.length 
-    });
-    
-    if (conversationId && dbMessages.length > 0) {
-      console.log('💬 Chat: Loading messages from database');
-      const loadedMessages: Message[] = dbMessages.map(msg => ({
-        id: msg.id,
-        text: msg.content,
-        isUser: msg.is_user,
-        timestamp: new Date(msg.created_at || ''),
-        isFollowUp: msg.guidance_data?.isFollowUp || false,
-        guidance: msg.guidance_data?.guidance || undefined,
-        simpleResponse: msg.guidance_data?.simpleResponse || undefined,
-        isStreaming: false,
-        isCancelled: true, // This ensures no streaming animation for historical messages
-      }));
-      setMessages(loadedMessages);
-      
-      // Scroll to bottom when loading conversation history
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: false });
-      }, 100);
-    }
-  }, [conversationId, dbMessages]);
-
-  // Remove the old effects completely
-  /*
-  useEffect(() => {
-    // Load existing conversation messages
-    if (conversationId && dbMessages.length > 0) {
-      const loadedMessages: Message[] = dbMessages.map(msg => ({
-        id: msg.id,
-        text: msg.content,
-        isUser: msg.is_user,
-        timestamp: new Date(msg.created_at || ''),
-        isFollowUp: msg.guidance_data?.isFollowUp || false,
-        guidance: msg.guidance_data?.guidance || undefined,
-        simpleResponse: msg.guidance_data?.simpleResponse || undefined,
-        isStreaming: false,
-        isCancelled: false,
-      }));
-      setMessages(loadedMessages);
-      setConversationStarted(true);
-      
-      // Scroll to bottom when loading conversation history
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: false });
-      }, 100);
-    } else if (!conversationId) {
-      // Clear messages for new conversation
-      setMessages([]);
-      setConversationStarted(false);
-      setCurrentConversationId(null);
-    }
-  }, [conversationId, dbMessages]);
-  */
-
   const handleSendMessage = async (text?: string) => {
     const messageText = text || inputText.trim();
     console.log('💬 Chat: handleSendMessage called with:', { 
@@ -338,6 +218,94 @@ export default function ChatScreen() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    // Generate random suggestions on component mount
+    setSuggestions(getRandomSuggestions(2));
+  }, []);
+
+  useEffect(() => {
+    console.log('💬 Chat: Initial setup effect running', { 
+      hasProcessedInitialSetup, 
+      conversationId, 
+      initialPrompt: initialPrompt ? initialPrompt.substring(0, 50) + '...' : 'none'
+    });
+    
+    if (!hasProcessedInitialSetup) {
+      if (conversationId) {
+        console.log('💬 Chat: Setting up existing conversation');
+        // This is an existing conversation
+        setCurrentConversationId(conversationId);
+        setConversationStarted(true);
+      } else if (initialPrompt && typeof initialPrompt === 'string') {
+        console.log('💬 Chat: Setting up new conversation with initial prompt');
+        // This is a new conversation with an initial prompt
+        setCurrentConversationId(null);
+        setMessages([]);
+        setConversationStarted(false);
+        // Automatically send the initial prompt
+        console.log('💬 Chat: Scheduling initial prompt send in 100ms');
+        setTimeout(() => {
+          console.log('💬 Chat: About to send initial prompt:', initialPrompt);
+          handleSendMessage(initialPrompt);
+        }, 100);
+      } else {
+        console.log('💬 Chat: Setting up completely new conversation');
+        // This is a completely new conversation with no initial prompt
+        setCurrentConversationId(null);
+        setMessages([]);
+        setConversationStarted(false);
+      }
+      console.log('💬 Chat: Marking initial setup as processed');
+      setHasProcessedInitialSetup(true);
+    }
+  }, [conversationId, initialPrompt, hasProcessedInitialSetup]);
+
+  // Reset when navigating to a new conversation (no conversationId)
+  useEffect(() => {
+    console.log('💬 Chat: Reset effect running', { 
+      conversationId, 
+      hasProcessedInitialSetup,
+      messagesLength: messages.length 
+    });
+    
+    if (!conversationId && hasProcessedInitialSetup) {
+      console.log('💬 Chat: Resetting for new conversation');
+      setCurrentConversationId(null);
+      setMessages([]);
+      setConversationStarted(false);
+      setSuggestions(getRandomSuggestions(2));
+    }
+  }, [conversationId, initialPrompt, hasProcessedInitialSetup]);
+
+  // Separate effect for loading messages when conversationId changes
+  useEffect(() => {
+    console.log('💬 Chat: DB messages effect running', { 
+      conversationId, 
+      dbMessagesLength: dbMessages.length 
+    });
+    
+    if (conversationId && dbMessages.length > 0) {
+      console.log('💬 Chat: Loading messages from database');
+      const loadedMessages: Message[] = dbMessages.map(msg => ({
+        id: msg.id,
+        text: msg.content,
+        isUser: msg.is_user,
+        timestamp: new Date(msg.created_at || ''),
+        isFollowUp: msg.guidance_data?.isFollowUp || false,
+        guidance: msg.guidance_data?.guidance || undefined,
+        simpleResponse: msg.guidance_data?.simpleResponse || undefined,
+        isStreaming: false,
+        isCancelled: true, // This ensures no streaming animation for historical messages
+      }));
+      setMessages(loadedMessages);
+      
+      // Scroll to bottom when loading conversation history
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: false });
+      }, 100);
+    }
+  }, [conversationId, dbMessages]);
 
   const handleStreamingComplete = (messageId: string) => {
     setMessages(prev => 
