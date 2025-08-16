@@ -99,6 +99,7 @@ export default function ChatScreen() {
     // Create new conversation if this is the first message
     if (!conversationIdToUse) {
       console.log('💬 Chat: Creating new conversation for first message');
+      console.log('💬 Chat: User context:', user ? { id: user.id, email: user.email } : 'NO USER');
       const title = messageText.length > 50 
         ? messageText.substring(0, 50) + '...' 
         : messageText;

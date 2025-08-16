@@ -49,6 +49,12 @@ export const useConversations = () => {
   };
 
   const createConversation = async (title: string, firstMessage?: string): Promise<string | null> => {
+    console.log('🗂️ createConversation called with:', { 
+      title: title.substring(0, 50) + '...', 
+      firstMessage: firstMessage ? firstMessage.substring(0, 50) + '...' : 'none',
+      user: user ? { id: user.id, email: user.email } : 'NO USER'
+    });
+    
     if (!user) return null;
 
     try {
