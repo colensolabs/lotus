@@ -88,6 +88,8 @@ export const useConversations = () => {
             id: session.user.id,
             email: session.user.email!,
             display_name: session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || 'User',
+          }
+          )
 
         console.log('📝 Profile creation result:', { newProfile, createProfileError });
         
