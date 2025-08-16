@@ -64,7 +64,7 @@ export const useConversations = () => {
         return null;
       }
 
-      if (!session.user?.id) {
+      if (!session.user || !session.user.id) {
         console.log('❌ Session exists but user has no ID:', session.user);
         return null;
       }
@@ -83,7 +83,7 @@ export const useConversations = () => {
           .from('user_profiles')
           .insert({
             id: session.user.id,
-            email: session.user.email!,
+            email: session.user.email || '',
             display_name: session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || 'User',
           })
           .select();
