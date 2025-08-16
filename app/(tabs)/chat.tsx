@@ -82,7 +82,17 @@ export default function ChatScreen() {
   useEffect(() => {
     // Generate random suggestions on component mount
     setSuggestions(getRandomSuggestions(2));
-  }, []);
+  }, [conversationId, initialPrompt, hasProcessedInitialSetup]);
+
++  // Handle initial prompt by automatically sending it
++  useEffect(() => {
++    if (initialPrompt && typeof initialPrompt === 'string' && hasProcessedInitialSetup && !conversationStarted) {
++      handleSendMessage(initialPrompt);
++    }
++  }, [initialPrompt, hasProcessedInitialSetup, conversationStarted]);
++
+   // Reset when navigating to a new conversation (no conversationId)
+
 
   useEffect(() => {
     if (!hasProcessedInitialSetup) {
