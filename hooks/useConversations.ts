@@ -82,14 +82,11 @@ export const useConversations = () => {
         const { data: newProfile, error: createProfileError } = await supabase
           .from('user_profiles')
           .insert({
-            id: user.id,
-            email: user.email!,
-            display_name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
             id: session.user.id,
             email: session.user.email!,
             display_name: session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || 'User',
-          }
-          )
+          })
+          .select();
 
         console.log('📝 Profile creation result:', { newProfile, createProfileError });
         
