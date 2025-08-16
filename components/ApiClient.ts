@@ -31,7 +31,36 @@ export class BuddhistGuidanceAPI {
     // Using hardcoded API key
   }
 
+  async checkForExampleResponse(userMessage: string): Promise<BuddhistGuidanceResponse | null> {
+    try {
+      const { data, error } = await supabase
+        .from('example_conversations')
+        .select('guidance_response')
+        .eq('question', userMessage)
+        .eq('is_active', true)
+        .single();
+
+      if (error || !data) {
+        return null;
+      }
+
+      return data.guidance_response as BuddhistGuidanceResponse;
+    } catch (error) {
+      console.log('No example found for this question');
+      return null;
+    }
+  }
+
   async getBuddhistGuidance(userMessage: string, isFollowUp: boolean = false): Promise<BuddhistGuidanceResponse> {
+    // First check if this is one of our pre-recorded examples
+    if (!isFollowUp) {
+      const exampleResponse = await this.checkForExampleResponse(userMessage);
+      if (exampleResponse) {
+        console.log('Using pre-recorded example response');
+        return exampleResponse;
+      }
+    }
+
     const prompt = isFollowUp ? this.createFollowUpPrompt(userMessage) : this.createStructuredPrompt(userMessage);
 
     try {
@@ -271,4 +300,5 @@ const apiInstance = new BuddhistGuidanceAPI();
 
 export const getBuddhistGuidance = async (message: string, isFollowUp: boolean = false): Promise<BuddhistGuidanceResponse> => {
   return apiInstance.getBuddhistGuidance(message, isFollowUp);
+import { supabase } from '@/lib/supabase';
 };

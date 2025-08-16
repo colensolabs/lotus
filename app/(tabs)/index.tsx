@@ -1,9 +1,11 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Image } from 'react-native';
 import { router } from 'expo-router';
+import { useExampleConversations } from '@/hooks/useExampleConversations';
 import { MessageCircle, Heart, Bot as Lotus, Compass, MessageSquare } from 'lucide-react-native';
 
-const examplePrompts = [
+// Fallback examples in case database is not available
+const fallbackExamples = [
   {
     title: "Relationship Communication",
     text: "I'm having difficulty communicating with my partner during conflicts. How can I approach disagreements with more compassion?",
@@ -21,7 +23,15 @@ const examplePrompts = [
   }
 ];
 
+const iconMap: { [key: string]: any } = {
+  'Relationship Communication': Heart,
+  'Career Decisions': Compass,
+  'Family Tensions': MessageSquare,
+};
+
 export default function HomeScreen() {
+  const { examples, isLoading } = useExampleConversations();
+
   const handleStartChat = (prompt?: string) => {
     if (prompt) {
       router.replace({ pathname: '/(tabs)/chat', params: { initialPrompt: prompt } });
@@ -29,6 +39,16 @@ export default function HomeScreen() {
       router.replace('/(tabs)/chat');
     }
   };
+
+  // Use database examples if available, otherwise fallback to hardcoded ones
+  const examplePrompts = examples.length > 0 
+    ? examples.map(example => ({
+        title: example.title,
+        text: example.question,
+        icon: iconMap[example.title] || MessageSquare
+      }))
+    : fallbackExamples;
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
@@ -53,7 +73,7 @@ export default function HomeScreen() {
       <View style={styles.examplesSection}>
         <Text style={styles.sectionTitle}>Example conversations</Text>
         
-        {examplePrompts.map((prompt, index) => {
+        {!isLoading && examplePrompts.map((prompt, index) => {
           const IconComponent = prompt.icon;
           return (
           <TouchableOpacity

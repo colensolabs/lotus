@@ -115,6 +115,36 @@ export interface Database {
           }
         ]
       }
+      example_conversations: {
+        Row: {
+          id: string
+          title: string
+          question: string
+          guidance_response: Json
+          created_at: string | null
+          updated_at: string | null
+          is_active: boolean | null
+        }
+        Insert: {
+          id?: string
+          title: string
+          question: string
+          guidance_response: Json
+          created_at?: string | null
+          updated_at?: string | null
+          is_active?: boolean | null
+        }
+        Update: {
+          id?: string
+          title?: string
+          question?: string
+          guidance_response?: Json
+          created_at?: string | null
+          updated_at?: string | null
+          is_active?: boolean | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
