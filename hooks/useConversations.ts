@@ -13,7 +13,7 @@ export const useConversations = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user) {
+    if (user && user.id) {
       fetchConversations();
     } else {
       setConversations([]);
@@ -22,7 +22,10 @@ export const useConversations = () => {
   }, [user]);
 
   const fetchConversations = async () => {
-    if (!user) return;
+    if (!user || !user.id) {
+      setIsLoading(false);
+      return;
+    }
 
     try {
       setIsLoading(true);
