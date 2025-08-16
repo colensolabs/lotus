@@ -56,6 +56,15 @@ export const useConversations = () => {
     try {
       // First, ensure user profile exists
       const { error: upsertError } = await supabase
+    // Check if user is actually authenticated
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    console.log('🔐 Session check:', { session: !!session, sessionError, userId: session?.user?.id });
+    
+    if (!session) {
+      console.log('❌ No valid session found');
+      return null;
+    }
+
         .from('user_profiles')
         .upsert({
           id: user.id,
@@ -71,97 +80,87 @@ export const useConversations = () => {
         throw upsertError;
       }
 
-      // Now create the conversation
-      console.log('👤 User details:', { 
-        id: user.id, 
-        email: user.email, 
-        metadata: user.user_metadata 
-      });
-
-      console.log('🔍 Checking if user profile exists...');
-      const { data: existingProfile, error: checkError } = await supabase
+      // Step 1: Check current user profile
+      console.log('🔍 Step 1: Checking user profile...');
+      const { data: profile, error: profileCheckError } = await supabase
         .from('user_profiles')
-        .select('id')
-        .eq('id', user.id)
-        .single();
-
-      console.log('📋 Existing profile check result:', { existingProfile, checkError });
-
-      if (!existingProfile) {
-        console.log('➕ Creating user profile...');
-        const profileData = {
-          id: user.id,
-          email: user.email!,
-          display_name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
-          updated_at: new Date().toISOString(),
-        };
-        console.log('📝 Profile data to insert:', profileData);
-
-        const { data: newProfile, error: profileError } = await supabase
+        .select('id, email')
+      // Step 2: Create profile if it doesn't exist
+      if (!profile) {
+        console.log('➕ Step 2: Creating user profile...');
+        const { data: newProfile, error: createProfileError } = await supabase
           .from('user_profiles')
-          .insert(profileData)
+          .insert({
+            id: user.id,
+            email: user.email!,
+            display_name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
+          })
           .select('id')
           .single();
 
-        console.log('✅ Profile creation result:', { newProfile, profileError });
-
-        if (profileError) {
-          console.error('❌ Profile creation failed:', profileError);
-          throw profileError;
+        console.log('📝 Profile creation result:', { newProfile, createProfileError });
+        
+        if (createProfileError) {
+          console.error('❌ Failed to create profile:', createProfileError);
+          throw createProfileError;
         }
-      } else {
-        console.log('✅ User profile already exists');
-      }
+      console.log('📋 Profile check result:', { profile, profileCheckError });
 
-      // Now create the conversation
-      console.log('💬 Creating conversation...');
+      // Step 3: Create conversation
+      console.log('💬 Step 3: Creating conversation...');
       const conversationData = {
         user_id: user.id,
         title,
         preview: firstMessage ? firstMessage.substring(0, 100) : null,
       };
-      console.log('📝 Conversation data to insert:', conversationData);
+      console.log('📝 Conversation data:', conversationData);
 
-      const { data: conversation, error: conversationError } = await supabase
+      // Try to insert conversation
+      const { data, error } = await supabase
         .from('conversations')
         .insert(conversationData)
-        .select('*')
+        .select('id, title, user_id')
         .single();
 
-      console.log('💬 Conversation creation result:', { conversation, conversationError });
+      console.log('💬 Raw Supabase response:', { data, error });
+      console.log('💬 Data type:', typeof data, 'Data keys:', data ? Object.keys(data) : 'null');
 
       if (conversationError) {
-        console.error('Failed to create conversation:', conversationError);
-        console.error('❌ Conversation creation failed:', {
-          error: conversationError,
-          code: conversationError.code,
-          message: conversationError.message,
-          details: conversationError.details,
-          hint: conversationError.hint
+      if (error) {
+        console.error('❌ Supabase error:', error);
+        console.error('❌ Error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
         });
-        throw conversationError;
+        throw error;
       }
 
       if (!conversation?.id) {
-        console.error('No conversation ID returned');
-        console.error('❌ No conversation ID returned. Full response:', conversation);
-        throw new Error('No conversation ID returned');
+      if (!data) {
+        console.error('❌ No data returned from insert');
+        throw new Error('No data returned from conversation insert');
       }
 
-      // Refresh conversations list
-      console.log('🎉 Conversation created successfully with ID:', conversation.id);
+      if (!data.id) {
+        console.error('❌ No ID in returned data:', data);
+        throw new Error('No ID in returned conversation data');
+      }
 
-      console.log('🔄 Refreshing conversations list...');
+      console.log('🎉 Success! Conversation ID:', data.id);
+      
+      // Step 4: Refresh conversations list
       await fetchConversations();
       
-      return conversation.id;
+      return data.id;
     } catch (err) {
       console.error('Error creating conversation:', err);
-      console.error('💥 Error in createConversation:', {
-        error: err,
-        message: err instanceof Error ? err.message : 'Unknown error',
-        stack: err instanceof Error ? err.stack : undefined
-      });
+      console.error('💥 createConversation error:', err);
+      if (err instanceof Error) {
+        console.error('💥 Error message:', err.message);
+        console.error('💥 Error stack:', err.stack);
+      }
       console.log('❌ No user found');
       return null;
     }
