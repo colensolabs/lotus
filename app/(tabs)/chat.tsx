@@ -81,6 +81,19 @@ export default function ChatScreen() {
   // Track if we've processed the initial setup
   const [hasProcessedInitialSetup, setHasProcessedInitialSetup] = useState(false);
 
+  // Reset chat state whenever we start any new conversation action
+  useEffect(() => {
+    // Always reset state when any new conversation parameters are provided
+    if (hasProcessedInitialSetup && (initialPrompt || exampleQuestion || !conversationId)) {
+      setMessages([]);
+      setCurrentConversationId(null);
+      setConversationStarted(false);
+      setStreamingMessageId(null);
+      setIsLoading(false);
+      clearMessages();
+    }
+  }, [initialPrompt, exampleQuestion, conversationId, hasProcessedInitialSetup]);
+
   useEffect(() => {
     // Generate random suggestions on component mount
     setSuggestions(getRandomSuggestions(2));

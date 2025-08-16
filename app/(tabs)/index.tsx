@@ -21,8 +21,9 @@ export default function HomeScreen() {
   const { examples, isLoading, error } = useExampleConversations();
 
   const handleStartChat = (exampleQuestion?: string, exampleGuidanceResponse?: any) => {
+    // Force navigation with replace to ensure clean state
     if (exampleQuestion && exampleGuidanceResponse) {
-      router.push({ 
+      router.replace({ 
         pathname: '/(tabs)/chat', 
         params: { 
           exampleQuestion,
@@ -30,7 +31,7 @@ export default function HomeScreen() {
         } 
       });
     } else {
-      router.push('/(tabs)/chat');
+      router.replace('/(tabs)/chat');
     }
   };
   return (
