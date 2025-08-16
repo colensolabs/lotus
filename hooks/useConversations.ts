@@ -92,7 +92,7 @@ export const useConversations = () => {
           message_count: 0,
           last_message_at: new Date().toISOString(),
         })
-        .select()
+        .select('*')
         .single();
 
       if (error) {
@@ -106,7 +106,12 @@ export const useConversations = () => {
         throw error;
       }
 
-      if (!data || !data.id) {
+      if (!data) {
+        console.error('No data returned from conversation insert');
+        throw new Error('No data returned from conversation creation');
+      }
+
+      if (!data.id) {
         console.error('Conversation created but no data returned:', data);
         throw new Error('Conversation created but no ID returned');
       }
