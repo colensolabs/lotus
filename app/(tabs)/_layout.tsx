@@ -49,6 +49,24 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="preferences"
+        options={{
+          title: 'Preferences',
+          tabBarIcon: ({ size, color }) => (
+            <Settings size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ size, color }) => (
+            <Settings size={size} color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
