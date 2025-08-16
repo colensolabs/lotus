@@ -56,14 +56,14 @@ export const useConversations = () => {
     try {
       // First, ensure user profile exists
       const { error: upsertError } = await supabase
-    // Check if user is actually authenticated
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    console.log('🔐 Session check:', { session: !!session, sessionError, userId: session?.user?.id });
-    
-    if (!session) {
-      console.log('❌ No valid session found');
-      return null;
-    }
+        // Check if user is actually authenticated
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        console.log('🔐 Session check:', { session: !!session, sessionError, userId: session?.user?.id });
+        
+        if (!session) {
+          console.log('❌ No valid session found');
+          return null;
+        }
 
         .from('user_profiles')
         .upsert({
@@ -85,6 +85,8 @@ export const useConversations = () => {
       const { data: profile, error: profileCheckError } = await supabase
         .from('user_profiles')
         .select('id, email')
+        .eq('id', user.id)
+        .single();
       // Step 2: Create profile if it doesn't exist
       if (!profile) {
         console.log('➕ Step 2: Creating user profile...');
@@ -104,6 +106,7 @@ export const useConversations = () => {
           console.error('❌ Failed to create profile:', createProfileError);
           throw createProfileError;
         }
+      }
       console.log('📋 Profile check result:', { profile, profileCheckError });
 
       // Step 3: Create conversation
@@ -125,7 +128,6 @@ export const useConversations = () => {
       console.log('💬 Raw Supabase response:', { data, error });
       console.log('💬 Data type:', typeof data, 'Data keys:', data ? Object.keys(data) : 'null');
 
-      if (conversationError) {
       if (error) {
         console.error('❌ Supabase error:', error);
         console.error('❌ Error details:', {
@@ -137,7 +139,6 @@ export const useConversations = () => {
         throw error;
       }
 
-      if (!conversation?.id) {
       if (!data) {
         console.error('❌ No data returned from insert');
         throw new Error('No data returned from conversation insert');
