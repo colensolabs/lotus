@@ -51,115 +51,52 @@ export const useConversations = () => {
   const createConversation = async (title: string, firstMessage?: string): Promise<string | null> => {
     if (!user) return null;
 
-    console.log('=== Starting conversation creation ===');
-    console.log('User:', user.id, user.email);
-    console.log('Title:', title);
-    console.log('First message:', firstMessage);
-    // Ensure user profile exists before creating conversation
     try {
-      console.log('Checking user profile...');
-      const { data: profile, error: profileError } = await supabase
+      // First, ensure user profile exists
+      const { error: upsertError } = await supabase
         .from('user_profiles')
-        .select('id')
-        .eq('id', user.id)
-        .single();
-
-      console.log('Profile check result:', { profile, profileError });
-      if (profileError || !profile) {
-        console.log('User profile not found, creating one...');
-        const { error: createProfileError } = await supabase
-          .from('user_profiles')
-          .upsert({
-            id: user.id,
-            email: user.email!,
-            display_name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
-          });
-        
-        console.log('Profile creation result:', { createProfileError });
-        if (createProfileError) {
-          console.error('Failed to create user profile:', createProfileError);
-          throw new Error('Failed to create user profile');
-        }
-      }
-    } catch (profileErr) {
-      console.error('Profile check/creation failed:', profileErr);
-      setError('Failed to verify user profile. Please try logging out and back in.');
-      return null;
-    }
-
-    try {
-      console.log('Creating conversation:', { title, userId: user.id, firstMessage });
-      
-      const insertData = {
-        user_id: user.id,
-        title,
-        preview: firstMessage ? firstMessage.substring(0, 100) : null,
-        message_count: 0,
-        last_message_at: new Date().toISOString(),
-      };
-      console.log('Insert data:', insertData);
-
-      const { data, error } = await supabase
-        .from('conversations')
-        .insert(insertData)
-        .select('*')
-        .single();
-
-      console.log('Raw Supabase response:', { data, error });
-      console.log('Data type:', typeof data);
-      console.log('Data keys:', data ? Object.keys(data) : 'no data');
-      if (error) {
-        console.error('Supabase error creating conversation:', {
-          error,
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint
+        .upsert({
+          id: user.id,
+          email: user.email!,
+          display_name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'id'
         });
-        throw error;
+
+      if (upsertError) {
+        console.error('Failed to ensure user profile:', upsertError);
+        throw upsertError;
       }
 
-      if (!data) {
-        console.error('No data returned from conversation insert');
-        throw new Error('No data returned from conversation creation');
+      // Now create the conversation
+      const { data: conversation, error: conversationError } = await supabase
+        .from('conversations')
+        .insert({
+          user_id: user.id,
+          title,
+          preview: firstMessage ? firstMessage.substring(0, 100) : null,
+        })
+        .select('id')
+        .single();
+
+      if (conversationError) {
+        console.error('Failed to create conversation:', conversationError);
+        throw conversationError;
       }
 
-      console.log('Conversation data received:', data);
-      console.log('Conversation ID:', data.id);
-      console.log('ID type:', typeof data.id);
-      if (!data.id) {
-        console.error('Conversation created but no data returned:', data);
-        throw new Error('Conversation created but no ID returned');
+      if (!conversation?.id) {
+        console.error('No conversation ID returned');
+        throw new Error('No conversation ID returned');
       }
 
-      console.log('Conversation created successfully:', data.id);
-      
       // Refresh conversations list
       await fetchConversations();
       
-      return data.id;
+      return conversation.id;
     } catch (err) {
-      console.error('Error creating conversation:', {
-        error: err,
-        user: user?.id,
-        title,
-        firstMessage
-      });
-      
-      // More specific error messages
-      if (err instanceof Error) {
-        if (err.message.includes('violates row-level security policy')) {
-          setError('Authentication error. Please try logging out and back in.');
-        } else if (err.message.includes('violates foreign key constraint')) {
-          setError('User profile error. Please try refreshing the app.');
-        } else if (err.message.includes('no ID returned')) {
-          setError('Database error. Please check your connection and try again.');
-        } else {
-          setError(`Failed to create conversation: ${err.message}`);
-        }
-      } else {
-        setError('Failed to create conversation. Please try again.');
-      }
+      console.error('Error creating conversation:', err);
+      setError('Failed to create conversation. Please try again.');
       return null;
     }
   };
