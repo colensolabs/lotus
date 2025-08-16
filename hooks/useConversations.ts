@@ -52,7 +52,11 @@ export const useConversations = () => {
     if (!user) return null;
 
     try {
-      console.log('Creating conversation:', { title, userId: user.id });
+      console.log('🗂️ Creating conversation:', { 
+        title: title.substring(0, 50) + '...', 
+        userId: user.id,
+        firstMessage: firstMessage ? firstMessage.substring(0, 50) + '...' : 'none'
+      });
       
       const { data, error } = await supabase
         .from('conversations')
@@ -67,18 +71,32 @@ export const useConversations = () => {
         .single();
 
       if (error) {
-        console.error('Supabase error creating conversation:', error);
+        console.error('🗂️ Supabase error creating conversation:', {
+          error,
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
         throw error;
       }
 
-      console.log('Conversation created successfully:', data.id);
+      console.log('🗂️ Conversation created successfully:', {
+        id: data.id,
+        title: data.title.substring(0, 50) + '...',
+        userId: data.user_id
+      });
       
       // Refresh conversations list
       await fetchConversations();
       
       return data.id;
     } catch (err) {
-      console.error('Error creating conversation:', err);
+      console.error('🗂️ Error creating conversation:', {
+        error: err,
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined
+      });
       setError('Failed to create conversation');
       return null;
     }
