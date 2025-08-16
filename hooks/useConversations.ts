@@ -78,7 +78,6 @@ export const useConversations = () => {
         metadata: user.user_metadata 
       });
 
-      const { data: conversation, error: conversationError } = await supabase
       console.log('🔍 Checking if user profile exists...');
       const { data: existingProfile, error: checkError } = await supabase
         .from('user_profiles')
@@ -123,14 +122,15 @@ export const useConversations = () => {
       };
       console.log('📝 Conversation data to insert:', conversationData);
 
+      const { data: conversation, error: conversationError } = await supabase
         .from('conversations')
-        .insert({
         .insert(conversationData)
         .select('*')
+        .single();
 
-      if (conversationError) {
       console.log('💬 Conversation creation result:', { conversation, conversationError });
 
+      if (conversationError) {
         console.error('Failed to create conversation:', conversationError);
         console.error('❌ Conversation creation failed:', {
           error: conversationError,
@@ -139,18 +139,20 @@ export const useConversations = () => {
           details: conversationError.details,
           hint: conversationError.hint
         });
+        throw conversationError;
       }
 
       if (!conversation?.id) {
         console.error('No conversation ID returned');
         console.error('❌ No conversation ID returned. Full response:', conversation);
+        throw new Error('No conversation ID returned');
       }
 
       // Refresh conversations list
       console.log('🎉 Conversation created successfully with ID:', conversation.id);
 
-      await fetchConversations();
       console.log('🔄 Refreshing conversations list...');
+      await fetchConversations();
       
       return conversation.id;
     } catch (err) {
