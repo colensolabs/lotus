@@ -179,20 +179,22 @@ export default function ChatScreen() {
 
     // Create new conversation if this is the first message
     if (!conversationIdToUse) {
+      console.log('🆕 Creating new conversation...');
       const title = messageText.length > 50 
         ? messageText.substring(0, 50) + '...' 
         : messageText;
       
-      console.log('About to create conversation with title:', title);
+      console.log('📝 About to create conversation with title:', title);
       conversationIdToUse = await createConversation(title, messageText);
-      console.log('Conversation creation result:', conversationIdToUse);
+      console.log('🎯 Conversation creation result:', conversationIdToUse);
       
       if (!conversationIdToUse) {
-        console.error('Failed to create conversation - no ID returned');
+        console.error('💥 Failed to create conversation - no ID returned');
         Alert.alert('Error', 'Failed to create conversation. Please try logging out and back in, then try again.');
         setIsLoading(false);
         return;
       }
+      console.log('✅ Setting current conversation ID to:', conversationIdToUse);
       setCurrentConversationId(conversationIdToUse);
     }
 

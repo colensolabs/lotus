@@ -49,6 +49,8 @@ export const useConversations = () => {
   };
 
   const createConversation = async (title: string, firstMessage?: string): Promise<string | null> => {
+    console.log('🚀 createConversation called with:', { title, firstMessage, userId: user?.id });
+    
     if (!user) return null;
 
     try {
@@ -70,33 +72,95 @@ export const useConversations = () => {
       }
 
       // Now create the conversation
+      console.log('👤 User details:', { 
+        id: user.id, 
+        email: user.email, 
+        metadata: user.user_metadata 
+      });
+
       const { data: conversation, error: conversationError } = await supabase
-        .from('conversations')
-        .insert({
-          user_id: user.id,
-          title,
-          preview: firstMessage ? firstMessage.substring(0, 100) : null,
-        })
+      console.log('🔍 Checking if user profile exists...');
+      const { data: existingProfile, error: checkError } = await supabase
+        .from('user_profiles')
         .select('id')
+        .eq('id', user.id)
         .single();
 
+      console.log('📋 Existing profile check result:', { existingProfile, checkError });
+
+      if (!existingProfile) {
+        console.log('➕ Creating user profile...');
+        const profileData = {
+          id: user.id,
+          email: user.email!,
+          display_name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
+          updated_at: new Date().toISOString(),
+        };
+        console.log('📝 Profile data to insert:', profileData);
+
+        const { data: newProfile, error: profileError } = await supabase
+          .from('user_profiles')
+          .insert(profileData)
+          .select('id')
+          .single();
+
+        console.log('✅ Profile creation result:', { newProfile, profileError });
+
+        if (profileError) {
+          console.error('❌ Profile creation failed:', profileError);
+          throw profileError;
+        }
+      } else {
+        console.log('✅ User profile already exists');
+      }
+
+      // Now create the conversation
+      console.log('💬 Creating conversation...');
+      const conversationData = {
+        user_id: user.id,
+        title,
+        preview: firstMessage ? firstMessage.substring(0, 100) : null,
+      };
+      console.log('📝 Conversation data to insert:', conversationData);
+
+        .from('conversations')
+        .insert({
+        .insert(conversationData)
+        .select('*')
+
       if (conversationError) {
+      console.log('💬 Conversation creation result:', { conversation, conversationError });
+
         console.error('Failed to create conversation:', conversationError);
-        throw conversationError;
+        console.error('❌ Conversation creation failed:', {
+          error: conversationError,
+          code: conversationError.code,
+          message: conversationError.message,
+          details: conversationError.details,
+          hint: conversationError.hint
+        });
       }
 
       if (!conversation?.id) {
         console.error('No conversation ID returned');
-        throw new Error('No conversation ID returned');
+        console.error('❌ No conversation ID returned. Full response:', conversation);
       }
 
       // Refresh conversations list
+      console.log('🎉 Conversation created successfully with ID:', conversation.id);
+
       await fetchConversations();
+      console.log('🔄 Refreshing conversations list...');
       
       return conversation.id;
     } catch (err) {
       console.error('Error creating conversation:', err);
-      setError('Failed to create conversation. Please try again.');
+      console.error('💥 Error in createConversation:', {
+        error: err,
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined
+      });
+      console.log('❌ No user found');
       return null;
     }
   };
