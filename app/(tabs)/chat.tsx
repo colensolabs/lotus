@@ -98,7 +98,7 @@ export default function ChatScreen() {
         // Automatically send the initial prompt
         setTimeout(() => {
           handleSendMessage(initialPrompt);
-        }, 500);
+        }, 100);
       } else {
         // This is a completely new conversation with no initial prompt
         setCurrentConversationId(null);
@@ -107,7 +107,7 @@ export default function ChatScreen() {
       }
       setHasProcessedInitialSetup(true);
     }
-  }, [conversationId, initialPrompt, hasProcessedInitialSetup]);
+  }, [conversationId, initialPrompt, hasProcessedInitialSetup, handleSendMessage]);
 
   // Reset when navigating to a new conversation (no conversationId)
   useEffect(() => {
