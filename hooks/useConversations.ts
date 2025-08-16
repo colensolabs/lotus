@@ -58,6 +58,14 @@ export const useConversations = () => {
         firstMessage: firstMessage ? firstMessage.substring(0, 50) + '...' : 'none'
       });
       
+      console.log('🗂️ About to call supabase.from(conversations).insert with:', {
+        user_id: user.id,
+        title,
+        preview: firstMessage ? firstMessage.substring(0, 100) : null,
+        message_count: 0,
+        last_message_at: new Date().toISOString(),
+      });
+      
       const { data, error } = await supabase
         .from('conversations')
         .insert({
@@ -70,6 +78,8 @@ export const useConversations = () => {
         .select()
         .single();
 
+      console.log('🗂️ Supabase response:', { data, error });
+
       if (error) {
         console.error('🗂️ Supabase error creating conversation:', {
           error,
@@ -79,6 +89,11 @@ export const useConversations = () => {
           hint: error.hint
         });
         throw error;
+      }
+
+      if (!data) {
+        console.error('🗂️ No data returned from insert operation');
+        throw new Error('No data returned from conversation creation');
       }
 
       console.log('🗂️ Conversation created successfully:', {
