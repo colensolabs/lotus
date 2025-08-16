@@ -53,6 +53,8 @@ export const useAuth = () => {
 
   const createOrUpdateUserProfile = async (user: User) => {
     try {
+      console.log('Creating/updating user profile for:', user.id, user.email);
+      
       const { error } = await supabase
         .from('user_profiles')
         .upsert({
@@ -65,7 +67,14 @@ export const useAuth = () => {
         });
 
       if (error) {
-        console.error('Error creating/updating user profile:', error);
+        console.error('Error creating/updating user profile:', {
+          error,
+          code: error.code,
+          message: error.message,
+          userId: user.id,
+          email: user.email
+        });
+        console.log('User profile created/updated successfully');
       }
     } catch (error) {
       console.error('Error in createOrUpdateUserProfile:', error);

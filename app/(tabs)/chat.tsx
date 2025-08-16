@@ -183,9 +183,13 @@ export default function ChatScreen() {
         ? messageText.substring(0, 50) + '...' 
         : messageText;
       
+      console.log('About to create conversation with title:', title);
       conversationIdToUse = await createConversation(title, messageText);
+      console.log('Conversation creation result:', conversationIdToUse);
+      
       if (!conversationIdToUse) {
-        Alert.alert('Error', 'Failed to create conversation');
+        console.error('Failed to create conversation - no ID returned');
+        Alert.alert('Error', 'Failed to create conversation. Please check your connection and try again.');
         return;
       }
       setCurrentConversationId(conversationIdToUse);

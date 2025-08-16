@@ -52,7 +52,7 @@ export const useConversations = () => {
     if (!user) return null;
 
     try {
-      console.log('Creating conversation:', { title, userId: user.id });
+      console.log('Creating conversation:', { title, userId: user.id, firstMessage });
       
       const { data, error } = await supabase
         .from('conversations')
@@ -67,7 +67,13 @@ export const useConversations = () => {
         .single();
 
       if (error) {
-        console.error('Supabase error creating conversation:', error);
+        console.error('Supabase error creating conversation:', {
+          error,
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
         throw error;
       }
 
@@ -78,8 +84,25 @@ export const useConversations = () => {
       
       return data.id;
     } catch (err) {
-      console.error('Error creating conversation:', err);
-      setError('Failed to create conversation');
+      console.error('Error creating conversation:', {
+        error: err,
+        user: user?.id,
+        title,
+        firstMessage
+      });
+      
+      // More specific error messages
+      if (err instanceof Error) {
+        if (err.message.includes('violates row-level security policy')) {
+          setError('Authentication error. Please try logging out and back in.');
+        } else if (err.message.includes('violates foreign key constraint')) {
+          setError('User profile error. Please try refreshing the app.');
+        } else {
+          setError(`Failed to create conversation: ${err.message}`);
+        }
+      } else {
+        setError('Failed to create conversation. Please try again.');
+      }
       return null;
     }
   };
