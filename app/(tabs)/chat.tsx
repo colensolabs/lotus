@@ -80,56 +80,40 @@ export default function ChatScreen() {
   // Track if we've processed the initial setup
   const [hasProcessedInitialSetup, setHasProcessedInitialSetup] = useState(false);
 
-  // Handle example conversation auto-start
-  useEffect(() => {
-    if (initialPrompt && isExample === 'true' && !hasProcessedInitialSetup) {
-      setHasProcessedInitialSetup(true);
-     setConversationStarted(true);
-      // Auto-send the example question after a short delay
-      setTimeout(() => {
-        handleSendMessage(initialPrompt);
-      }, 500);
-    }
-  }, [initialPrompt, isExample, hasProcessedInitialSetup]);
-
   useEffect(() => {
     // Generate random suggestions on component mount
     setSuggestions(getRandomSuggestions(2));
   }, []);
 
   useEffect(() => {
-    if (!hasProcessedInitialSetup) {
-      if (conversationId) {
-        // This is an existing conversation
-        setCurrentConversationId(conversationId);
-        setConversationStarted(true);
-      } else if (initialPrompt && typeof initialPrompt === 'string') {
-        // This is a new conversation with an initial prompt
-        setCurrentConversationId(null);
-        setMessages([]);
-       // Don't set conversationStarted here - let the auto-send effect handle it
-       if (isExample !== 'true') {
-         setConversationStarted(true);
-       }
-      } else {
-        // This is a completely new conversation with no initial prompt
-        setCurrentConversationId(null);
-        setMessages([]);
-        setConversationStarted(false);
+    if (hasProcessedInitialSetup) return;
+    
+    if (conversationId) {
+      // This is an existing conversation
+      setCurrentConversationId(conversationId);
+      setConversationStarted(true);
+    } else if (initialPrompt && typeof initialPrompt === 'string') {
+      // This is a new conversation with an initial prompt
+      setCurrentConversationId(null);
+      setMessages([]);
+      setConversationStarted(true);
+      
+      // Auto-send example questions
+      if (isExample === 'true') {
+        setTimeout(() => {
+          handleSendMessage(initialPrompt);
+        }, 500);
       }
-      setHasProcessedInitialSetup(true);
-    }
-  }, [conversationId, initialPrompt, hasProcessedInitialSetup]);
-
-  // Reset when navigating to a new conversation (no conversationId)
-  useEffect(() => {
-   if (!conversationId && !initialPrompt && hasProcessedInitialSetup) {
+    } else {
+      // This is a completely new conversation with no initial prompt
       setCurrentConversationId(null);
       setMessages([]);
       setConversationStarted(false);
-      setSuggestions(getRandomSuggestions(2));
     }
-  }, [conversationId, initialPrompt, hasProcessedInitialSetup]);
+    
+    setHasProcessedInitialSetup(true);
+  }, [conversationId, initialPrompt, isExample, hasProcessedInitialSetup]);
+
 
   // Separate effect for loading messages when conversationId changes
   useEffect(() => {
