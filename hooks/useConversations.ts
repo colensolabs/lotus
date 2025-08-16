@@ -51,7 +51,10 @@ export const useConversations = () => {
   const createConversation = async (title: string, firstMessage?: string): Promise<string | null> => {
     console.log('🚀 createConversation called with:', { title, firstMessage, user: user, userId: user?.id });
     
-    if (!user) return null;
+    if (!user || !user.id) {
+      console.log('❌ No user or user ID found in createConversation');
+      return null;
+    }
       console.log('❌ No user found in createConversation');
 
     try {
@@ -59,13 +62,8 @@ export const useConversations = () => {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       console.log('🔐 Session check:', { session: !!session, sessionError, userId: session?.user?.id });
       
-      if (!session || !session.user) {
+      if (!session || !session.user || !session.user.id) {
         console.log('❌ No valid session found');
-        return null;
-      }
-
-      if (!session.user || !session.user.id) {
-        console.log('❌ Session exists but user has no ID:', session.user);
         return null;
       }
 
@@ -86,7 +84,7 @@ export const useConversations = () => {
             email: session.user.email || '',
             display_name: session.user.user_metadata?.display_name || session.user.email?.split('@')[0] || 'User',
           })
-          .select();
+            email: session.user.email || '',
 
         console.log('📝 Profile creation result:', { newProfile, createProfileError });
         
@@ -161,6 +159,11 @@ export const useConversations = () => {
 
 
   const updateConversation = async (conversationId: string, updates: Partial<Conversation>) => {
+    if (!user || !user.id) {
+      console.log('❌ No user found for updateConversation');
+      return;
+    }
+
     try {
       console.log('Updating conversation:', conversationId, updates);
       
@@ -191,6 +194,11 @@ export const useConversations = () => {
   };
 
   const deleteConversation = async (conversationId: string) => {
+    if (!user || !user.id) {
+      console.log('❌ No user found for deleteConversation');
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('conversations')
