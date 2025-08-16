@@ -60,8 +60,10 @@ interface Message {
 }
 
 export default function ChatScreen() {
-  const { initialPrompt, conversationId } = useLocalSearchParams<{ 
-    initialPrompt?: string; 
+  const { initialPrompt, conversationId, exampleQuestion, exampleGuidanceResponse } = useLocalSearchParams<{ 
+    initialPrompt?: string;
+    exampleQuestion?: string;
+    exampleGuidanceResponse?: string;
     conversationId?: string;
   }>();
   const { speedValue } = useStreamingSpeed();
@@ -113,6 +115,77 @@ export default function ChatScreen() {
       handleSendMessage(initialPrompt);
     }
   }, [initialPrompt, hasProcessedInitialSetup, conversationStarted]); 
+
+  // Handle example conversation by pre-populating messages
+  useEffect(() => {
+    if (exampleQuestion && exampleGuidanceResponse && hasProcessedInitialSetup && !conversationStarted) {
+      handleExampleConversation();
+    }
+  }, [exampleQuestion, exampleGuidanceResponse, hasProcessedInitialSetup, conversationStarted]);
+
+  const handleExampleConversation = async () => {
+    if (!exampleQuestion || !exampleGuidanceResponse) return;
+
+    try {
+      // Parse the guidance response
+      const parsedGuidance = JSON.parse(exampleGuidanceResponse);
+      
+      // Create new conversation
+      const title = exampleQuestion.length > 50 
+        ? exampleQuestion.substring(0, 50) + '...' 
+        : exampleQuestion;
+      
+      const newConversationId = await createConversation(title, exampleQuestion);
+      if (!newConversationId) {
+        console.error('Failed to create conversation for example');
+        return;
+      }
+      
+      setCurrentConversationId(newConversationId);
+
+      // Create user message
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        text: exampleQuestion,
+        isUser: true,
+        timestamp: new Date(),
+      };
+
+      // Create bot message with guidance
+      const botMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: parsedGuidance.intro,
+        isUser: false,
+        timestamp: new Date(),
+        guidance: parsedGuidance,
+        isStreaming: false,
+        isCancelled: true, // Don't animate for examples
+      };
+
+      // Update local state
+      setMessages([userMessage, botMessage]);
+      setConversationStarted(true);
+
+      // Save messages to database
+      try {
+        await addMessageToConversation(newConversationId, exampleQuestion, true);
+        await addMessageToConversation(newConversationId, parsedGuidance.intro, false, {
+          isFollowUp: false,
+          guidance: parsedGuidance,
+        });
+        
+        // Update conversation stats
+        await updateConversation(newConversationId, {
+          preview: exampleQuestion.substring(0, 100),
+          last_message_at: new Date().toISOString(),
+        });
+      } catch (error) {
+        console.error('Failed to save example conversation messages:', error);
+      }
+    } catch (error) {
+      console.error('Error handling example conversation:', error);
+    }
+  };
 
   // Reset when navigating to a new conversation (no conversationId)
   useEffect(() => {
