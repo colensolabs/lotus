@@ -12,6 +12,11 @@ interface BuddhistGuidanceResponse {
   simpleResponse?: string;
 }
 
+interface UserPreferences {
+  topics_of_interest?: string[];
+  buddhist_tradition?: 'secular' | 'general_buddhist' | 'theravada' | 'mahayana' | 'tibetan' | 'zen';
+}
+
 interface ApiResponse {
   content: string;
   practicalSteps?: string;
@@ -31,8 +36,14 @@ export class BuddhistGuidanceAPI {
     // Using hardcoded API key
   }
 
-  async getBuddhistGuidance(userMessage: string, isFollowUp: boolean = false): Promise<BuddhistGuidanceResponse> {
-    const prompt = isFollowUp ? this.createFollowUpPrompt(userMessage) : this.createStructuredPrompt(userMessage);
+  async getBuddhistGuidance(
+    userMessage: string, 
+    isFollowUp: boolean = false, 
+    userPreferences?: UserPreferences
+  ): Promise<BuddhistGuidanceResponse> {
+    const prompt = isFollowUp 
+      ? this.createFollowUpPrompt(userMessage, userPreferences) 
+      : this.createStructuredPrompt(userMessage, userPreferences);
 
     try {
       const response = await fetch(PERPLEXITY_API_URL, {
@@ -46,9 +57,7 @@ export class BuddhistGuidanceAPI {
           messages: [
             {
               role: 'system',
-              content: isFollowUp 
-                ? 'You are a compassionate Buddhist counselor. Respond naturally and conversationally to continue the dialogue. Keep responses warm, supportive, and grounded in Buddhist wisdom without formal structure. Be engaging but dont give long answers, a few sentences only. Be concise and asks questions if needed.'
-                : 'You are a compassionate Buddhist counselor providing guidance rooted in authentic Buddhist teachings. Always respond with structured advice in the exact format requested.'
+              content: this.createSystemPrompt(isFollowUp, userPreferences)
             },
             {
               role: 'user',
@@ -78,7 +87,43 @@ export class BuddhistGuidanceAPI {
     }
   }
 
-  private createStructuredPrompt(userMessage: string): string {
+  private createSystemPrompt(isFollowUp: boolean, userPreferences?: UserPreferences): string {
+    const traditionContext = this.getTraditionContext(userPreferences?.buddhist_tradition);
+    const topicsContext = userPreferences?.topics_of_interest?.length 
+      ? `The user is particularly interested in guidance related to: ${userPreferences.topics_of_interest.join(', ')}.`
+      : '';
+
+    if (isFollowUp) {
+      return `You are a compassionate Buddhist counselor. ${traditionContext} ${topicsContext} Respond naturally and conversationally to continue the dialogue. Keep responses warm, supportive, and grounded in Buddhist wisdom without formal structure. Be engaging but dont give long answers, a few sentences only. Be concise and asks questions if needed.`;
+    } else {
+      return `You are a compassionate Buddhist counselor providing guidance rooted in authentic Buddhist teachings. ${traditionContext} ${topicsContext} Always respond with structured advice in the exact format requested.`;
+    }
+  }
+
+  private getTraditionContext(tradition?: string): string {
+    switch (tradition) {
+      case 'secular':
+        return 'Focus on practical mindfulness and ethical principles without religious terminology or concepts.';
+      case 'theravada':
+        return 'Draw from Theravada Buddhist teachings, emphasizing the Four Noble Truths, Eightfold Path, and Pali Canon wisdom.';
+      case 'mahayana':
+        return 'Include Mahayana Buddhist concepts like bodhisattva ideals, compassion for all beings, and emptiness teachings.';
+      case 'tibetan':
+        return 'Incorporate Tibetan Buddhist practices including visualization, mantras, and teachings from the Dalai Lama and other Tibetan masters.';
+      case 'zen':
+        return 'Emphasize Zen Buddhist principles of direct experience, mindfulness, and teachings from Zen masters like Dogen and Thich Nhat Hanh.';
+      case 'general_buddhist':
+      default:
+        return 'Draw from core Buddhist teachings across all traditions, focusing on universal principles of mindfulness, compassion, and wisdom.';
+    }
+  }
+
+  private createStructuredPrompt(userMessage: string, userPreferences?: UserPreferences): string {
+    const traditionGuidance = this.getTraditionContext(userPreferences?.buddhist_tradition);
+    const topicsNote = userPreferences?.topics_of_interest?.length 
+      ? `\n\nNote: The user is particularly interested in guidance related to: ${userPreferences.topics_of_interest.join(', ')}.`
+      : '';
+
     return `
 Please provide Buddhist guidance for this situation: "${userMessage}"
 
@@ -86,7 +131,6 @@ Respond in this exact format:
 
 INTRO:
 Begin with a single, gentle acknowledgement in a warm, conversational tone that reflects back what the person shared and reassures them they're not alone. Keep it to 3 or 5 short sentences, e.g., "Thanks for sharing that—it sounds really hard, and I'm here with you." Avoid clinical language like "I understand you are facing…" or "Here's guidance rooted in…".
-
 
 PRACTICAL STEPS:
 [Provide 3-4 specific, actionable steps rooted in Buddhist practice]
@@ -106,9 +150,16 @@ Keep the response compassionate, practical, and grounded in authentic Buddhist w
     `;
   }
 
-  private createFollowUpPrompt(userMessage: string): string {
+  private createFollowUpPrompt(userMessage: string, userPreferences?: UserPreferences): string {
+    const traditionGuidance = this.getTraditionContext(userPreferences?.buddhist_tradition);
+    const topicsNote = userPreferences?.topics_of_interest?.length 
+      ? `\n\nNote: The user is particularly interested in guidance related to: ${userPreferences.topics_of_interest.join(', ')}.`
+      : '';
+
     return `
-This is a follow-up question in an ongoing Buddhist guidance conversation: "${userMessage}"
+This is a follow-up question in an ongoing Buddhist guidance conversation: "${userMessage}"${topicsNote}
+
+${traditionGuidance}
 
 Please provide a compassionate, conversational response that:
 - Directly addresses their follow-up question
@@ -269,10 +320,6 @@ Respond naturally without any special formatting or sections.
 // Singleton instance
 const apiInstance = new BuddhistGuidanceAPI();
 
-export const getBuddhistGuidance = async (
-  message: string, 
-  isFollowUp: boolean = false, 
-  userPreferences?: UserPreferences
-): Promise<BuddhistGuidanceResponse> => {
-  return apiInstance.getBuddhistGuidance(message, isFollowUp, userPreferences);
+export const getBuddhistGuidance = async (message: string, isFollowUp: boolean = false): Promise<BuddhistGuidanceResponse> => {
+  return apiInstance.getBuddhistGuidance(message, isFollowUp);
 };
