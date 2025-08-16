@@ -30,7 +30,7 @@ const iconMap: { [key: string]: any } = {
 };
 
 export default function HomeScreen() {
-  const { examples, isLoading } = useExampleConversations();
+  const { examples, isLoading, error } = useExampleConversations();
 
   const handleStartChat = (prompt?: string) => {
     if (prompt) {
@@ -40,8 +40,8 @@ export default function HomeScreen() {
     }
   };
 
-  // Use database examples if available, otherwise fallback to hardcoded ones
-  const examplePrompts = examples.length > 0 
+  // Use database examples if available and loaded successfully, otherwise fallback to hardcoded ones
+  const examplePrompts = (!isLoading && examples.length > 0 && !error)
     ? examples.map(example => ({
         title: example.title,
         text: example.question,
@@ -73,7 +73,7 @@ export default function HomeScreen() {
       <View style={styles.examplesSection}>
         <Text style={styles.sectionTitle}>Example conversations</Text>
         
-        {!isLoading && examplePrompts.map((prompt, index) => {
+        {examplePrompts.map((prompt, index) => {
           const IconComponent = prompt.icon;
           return (
           <TouchableOpacity
