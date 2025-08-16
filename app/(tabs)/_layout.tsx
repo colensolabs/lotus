@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { MessageCircle, Chrome as Home, Settings, History, User } from 'lucide-react-native';
+import { MessageCircle, Chrome as Home, Settings, History } from 'lucide-react-native';
 
 export default function TabLayout() {
   return (
@@ -37,6 +37,15 @@ export default function TabLayout() {
           title: 'Chat',
           tabBarIcon: ({ size, color }) => (
             <MessageCircle size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="conversations"
+        options={{
+          title: 'History',
+          tabBarIcon: ({ size, color }) => (
+            <History size={size} color={color} />
           ),
         }}
       />
