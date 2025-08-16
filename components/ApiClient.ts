@@ -89,14 +89,11 @@ export class BuddhistGuidanceAPI {
 
   private createSystemPrompt(isFollowUp: boolean, userPreferences?: UserPreferences): string {
     const traditionContext = this.getTraditionContext(userPreferences?.buddhist_tradition);
-    const topicsContext = userPreferences?.topics_of_interest?.length 
-      ? `The user is particularly interested in guidance related to: ${userPreferences.topics_of_interest.join(', ')}.`
-      : '';
 
     if (isFollowUp) {
-      return `You are a compassionate Buddhist counselor. ${traditionContext} ${topicsContext} Respond naturally and conversationally to continue the dialogue. Keep responses warm, supportive, and grounded in Buddhist wisdom without formal structure. Be engaging but dont give long answers, a few sentences only. Be concise and asks questions if needed.`;
+      return `You are a compassionate Buddhist counselor. ${traditionContext} Respond naturally and conversationally to continue the dialogue. Keep responses warm, supportive, and grounded in Buddhist wisdom without formal structure. Be engaging but dont give long answers, a few sentences only. Be concise and asks questions if needed.`;
     } else {
-      return `You are a compassionate Buddhist counselor providing guidance rooted in authentic Buddhist teachings. ${traditionContext} ${topicsContext} Always respond with structured advice in the exact format requested.`;
+      return `You are a compassionate Buddhist counselor providing guidance rooted in authentic Buddhist teachings. ${traditionContext} Always respond with structured advice in the exact format requested.`;
     }
   }
 
@@ -120,9 +117,6 @@ export class BuddhistGuidanceAPI {
 
   private createStructuredPrompt(userMessage: string, userPreferences?: UserPreferences): string {
     const traditionGuidance = this.getTraditionContext(userPreferences?.buddhist_tradition);
-    const topicsNote = userPreferences?.topics_of_interest?.length 
-      ? `\n\nNote: The user is particularly interested in guidance related to: ${userPreferences.topics_of_interest.join(', ')}.`
-      : '';
 
     return `
 Please provide Buddhist guidance for this situation: "${userMessage}"
@@ -152,12 +146,9 @@ Keep the response compassionate, practical, and grounded in authentic Buddhist w
 
   private createFollowUpPrompt(userMessage: string, userPreferences?: UserPreferences): string {
     const traditionGuidance = this.getTraditionContext(userPreferences?.buddhist_tradition);
-    const topicsNote = userPreferences?.topics_of_interest?.length 
-      ? `\n\nNote: The user is particularly interested in guidance related to: ${userPreferences.topics_of_interest.join(', ')}.`
-      : '';
 
     return `
-This is a follow-up question in an ongoing Buddhist guidance conversation: "${userMessage}"${topicsNote}
+This is a follow-up question in an ongoing Buddhist guidance conversation: "${userMessage}"
 
 ${traditionGuidance}
 
