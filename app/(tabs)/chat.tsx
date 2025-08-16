@@ -60,9 +60,10 @@ interface Message {
 }
 
 export default function ChatScreen() {
-  const { initialPrompt, conversationId } = useLocalSearchParams<{ 
+  const { initialPrompt, conversationId, isExample } = useLocalSearchParams<{ 
     initialPrompt?: string; 
     conversationId?: string;
+    isExample?: string;
   }>();
   const { speedValue } = useStreamingSpeed();
   const { createConversation, updateConversation } = useConversations();
@@ -78,6 +79,17 @@ export default function ChatScreen() {
 
   // Track if we've processed the initial setup
   const [hasProcessedInitialSetup, setHasProcessedInitialSetup] = useState(false);
+
+  // Handle example conversation auto-start
+  useEffect(() => {
+    if (initialPrompt && isExample === 'true' && !hasProcessedInitialSetup) {
+      setHasProcessedInitialSetup(true);
+      // Auto-send the example question after a short delay
+      setTimeout(() => {
+        handleSendMessage(initialPrompt);
+      }, 500);
+    }
+  }, [initialPrompt, isExample, hasProcessedInitialSetup]);
 
   useEffect(() => {
     // Generate random suggestions on component mount

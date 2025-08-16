@@ -46,6 +46,9 @@ export class BuddhistGuidanceAPI {
         return null;
       }
 
+      // Add a small delay to simulate API processing time
+      await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
+      
       return data.guidance_response as BuddhistGuidanceResponse;
     } catch (error) {
       console.log('No example found for this question');

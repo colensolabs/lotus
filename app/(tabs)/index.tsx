@@ -34,7 +34,7 @@ export default function HomeScreen() {
 
   const handleStartChat = (prompt?: string) => {
     if (prompt) {
-      router.replace({ pathname: '/(tabs)/chat', params: { initialPrompt: prompt } });
+      router.replace({ pathname: '/(tabs)/chat', params: { initialPrompt: prompt, isExample: 'true' } });
     } else {
       router.replace('/(tabs)/chat');
     }
