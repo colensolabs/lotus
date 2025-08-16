@@ -105,11 +105,11 @@ export class BuddhistGuidanceAPI {
       case 'secular':
         return 'Focus on practical mindfulness and ethical principles without religious terminology or concepts.';
       case 'theravada':
-        return 'Draw from Theravada Buddhist teachings, emphasizing the Four Noble Truths, Eightfold Path, and Pali Canon wisdom.';
+        return 'Focus on Theravada Buddhist teachings, emphasizing the Four Noble Truths, Eightfold Path, and Pali Canon wisdom.';
       case 'mahayana':
-        return 'Include Mahayana Buddhist concepts like bodhisattva ideals, compassion for all beings, and emptiness teachings.';
+        return 'Focus on Mahayana Buddhist concepts like bodhisattva ideals, compassion for all beings, and emptiness teachings.';
       case 'tibetan':
-        return 'Incorporate Tibetan Buddhist practices including visualization, mantras, and teachings from the Dalai Lama and other Tibetan masters.';
+        return 'Focus on Tibetan Buddhist practices including visualization, mantras, and teachings from the Dalai Lama and other Tibetan masters.';
       case 'zen':
         return 'Emphasize Zen Buddhist principles of direct experience, mindfulness, and teachings from Zen masters like Dogen and Thich Nhat Hanh.';
       case 'general_buddhist':
