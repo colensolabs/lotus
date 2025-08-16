@@ -54,30 +54,13 @@ export const useConversations = () => {
     if (!user) return null;
 
     try {
-      // First, ensure user profile exists
-      const { error: upsertError } = await supabase
-        // Check if user is actually authenticated
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        console.log('🔐 Session check:', { session: !!session, sessionError, userId: session?.user?.id });
-        
-        if (!session) {
-          console.log('❌ No valid session found');
-          return null;
-        }
-
-        .from('user_profiles')
-        .upsert({
-          id: user.id,
-          email: user.email!,
-          display_name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'id'
-        });
-
-      if (upsertError) {
-        console.error('Failed to ensure user profile:', upsertError);
-        throw upsertError;
+      // Check if user is actually authenticated
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log('🔐 Session check:', { session: !!session, sessionError, userId: session?.user?.id });
+      
+      if (!session) {
+        console.log('❌ No valid session found');
+        return null;
       }
 
       // Step 1: Check current user profile
