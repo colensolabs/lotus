@@ -21,6 +21,7 @@ import { TypingIndicator } from '@/components/TypingIndicator';
 import { useStreamingSpeed } from '@/hooks/useStreamingSpeed';
 import { useConversations } from '@/hooks/useConversations';
 import { useMessages } from '@/hooks/useMessages';
+import { useAuth } from '@/hooks/useAuth';
 
 const SUGGESTION_PROMPTS = [
 "How can I handle disagreements calmly and respectfully?",
@@ -38,6 +39,7 @@ const getRandomSuggestions = (count: number = 3): string[] => {
   const shuffled = [...SUGGESTION_PROMPTS].sort(() => 0.5 - Math.random());
   return shuffled.slice(0, 2);
 };
+
 interface Message {
   id: string;
   text: string;
@@ -55,20 +57,23 @@ interface Message {
       source: string;
       explanation: string;
     };
+    outro: string;
   };
   simpleResponse?: string;
 }
 
 export default function ChatScreen() {
-  const { initialPrompt, conversationId, exampleQuestion, exampleGuidanceResponse } = useLocalSearchParams<{ 
+  const { initialPrompt, conversationId, exampleQuestion, exampleGuidanceResponse, reset } = useLocalSearchParams<{ 
     initialPrompt?: string;
     exampleQuestion?: string;
     exampleGuidanceResponse?: string;
     conversationId?: string;
+    reset?: string;
   }>();
   const { speedValue } = useStreamingSpeed();
   const { createConversation, updateConversation } = useConversations();
   const { messages: dbMessages, addMessageToConversation, clearMessages } = useMessages(conversationId || null);
+  const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -80,33 +85,50 @@ export default function ChatScreen() {
 
   // Track if we've processed the initial setup
   const [hasProcessedInitialSetup, setHasProcessedInitialSetup] = useState(false);
-
-  // Reset chat state whenever we start any new conversation action
+  
+  // Add a cancellation token to track ongoing API calls
+  const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
+  
+  // Single reset effect that triggers when navigation parameters change
   useEffect(() => {
-    // Always reset state when any new conversation parameters are provided
-    if (hasProcessedInitialSetup && (initialPrompt || exampleQuestion || !conversationId)) {
-      setMessages([]);
-      setCurrentConversationId(null);
-      setConversationStarted(false);
-      setStreamingMessageId(null);
-      setIsLoading(false);
-      clearMessages();
-    }
-  }, [initialPrompt, exampleQuestion, conversationId, hasProcessedInitialSetup]);
-
-  useEffect(() => {
-    // Generate random suggestions on component mount
+    console.log('Reset effect triggered:', {
+      conversationId,
+      initialPrompt: !!initialPrompt,
+      exampleQuestion: !!exampleQuestion,
+      hasExampleGuidanceResponse: !!exampleGuidanceResponse,
+      reset,
+    });
+    
+    // Reset all state when navigation parameters change
+    setMessages([]);
+    setCurrentConversationId(conversationId || null);
+    setConversationStarted(false);
+    setStreamingMessageId(null);
+    setIsLoading(false);
+    setInputText('');
+    clearMessages();
     setSuggestions(getRandomSuggestions(2));
-  }, []);
+    setHasProcessedInitialSetup(false);
+  }, [conversationId, initialPrompt, exampleQuestion, exampleGuidanceResponse, reset]);
 
   useEffect(() => {
+    console.log('Initial setup effect triggered:', {
+      hasProcessedInitialSetup,
+      conversationId: !!conversationId,
+      initialPrompt: !!initialPrompt,
+      exampleQuestion: !!exampleQuestion,
+      exampleGuidanceResponse: !!exampleGuidanceResponse,
+    });
+    
     if (!hasProcessedInitialSetup) {
       if (conversationId) {
         // This is an existing conversation
+        console.log('Setting up existing conversation');
         setCurrentConversationId(conversationId);
         setConversationStarted(true);
       } else if (initialPrompt && typeof initialPrompt === 'string') {
         // This is a new conversation with an initial prompt
+        console.log('Setting up conversation with initial prompt');
         setCurrentConversationId(null);
         setMessages([]);
         setConversationStarted(false);
@@ -114,40 +136,104 @@ export default function ChatScreen() {
         setConversationStarted(true);
       } else {
         // This is a completely new conversation with no initial prompt
+        console.log('Setting up new conversation');
         setCurrentConversationId(null);
         setMessages([]);
         setConversationStarted(false);
       }
       setHasProcessedInitialSetup(true);
     }
-  }, [conversationId, initialPrompt, hasProcessedInitialSetup]);
+  }, [conversationId, initialPrompt, exampleQuestion, exampleGuidanceResponse]);
 
- // Handle initial prompt by automatically sending it
+  // Handle initial prompt by automatically sending it
   useEffect(() => {
     if (initialPrompt && typeof initialPrompt === 'string' && hasProcessedInitialSetup && !conversationStarted) {
       handleSendMessage(initialPrompt);
     }
   }, [initialPrompt, hasProcessedInitialSetup, conversationStarted]); 
 
-  // Handle example conversation by pre-populating messages
-  useEffect(() => {
-    if (exampleQuestion && exampleGuidanceResponse && hasProcessedInitialSetup && !conversationStarted) {
-      handleExampleConversation();
-    }
-  }, [exampleQuestion, exampleGuidanceResponse, hasProcessedInitialSetup, conversationStarted]);
-
   const handleExampleConversation = async () => {
     if (!exampleQuestion || !exampleGuidanceResponse) return;
 
+    // Reset conversation state for new example
+    setConversationStarted(false);
+    setMessages([]);
+
     try {
-      // Parse the guidance response
-      const parsedGuidance = JSON.parse(exampleGuidanceResponse);
+      console.log('Handling example conversation:', {
+        question: exampleQuestion,
+        hasGuidanceResponse: !!exampleGuidanceResponse,
+        guidanceType: typeof exampleGuidanceResponse,
+        userAuthenticated: !!user,
+      });
+
+      // Parse the guidance response from JSON string
+      let guidance: any;
+      try {
+        guidance = JSON.parse(exampleGuidanceResponse);
+      } catch (parseError) {
+        console.error('Failed to parse guidance response:', parseError);
+        return;
+      }
+
+      // Create user message and show it immediately
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        text: exampleQuestion,
+        isUser: true,
+        timestamp: new Date(),
+      };
+
+      // Add user message immediately for instant feedback
+      setMessages([userMessage]);
+      setConversationStarted(true);
+
+      // Show typing indicator
+      setIsLoading(true);
+
+      // Check authentication in parallel while showing typing indicator
+      let isAuthenticated = !!user;
+      let attempts = 0;
+      const maxAttempts = 50; // 5 seconds total
       
+      while (!isAuthenticated && attempts < maxAttempts) {
+        console.log(`Authentication attempt ${attempts + 1}/${maxAttempts}`);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        isAuthenticated = !!user;
+        attempts++;
+      }
+      
+      // Simulate API delay (1-2 seconds) - this happens regardless of auth status
+      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
+
+      // Create bot message with streaming enabled
+      const botMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: guidance.intro || 'Guidance response',
+        isUser: false,
+        timestamp: new Date(),
+        guidance: guidance,
+        isStreaming: true, // Enable streaming for examples
+        isCancelled: false, // Allow animation
+      };
+
+      // Add bot message and start streaming
+      setMessages([userMessage, botMessage]);
+      setStreamingMessageId(botMessage.id);
+      setIsLoading(false);
+
+      // Handle database operations based on authentication status
+      if (!isAuthenticated) {
+        console.log('User not authenticated - skipping database save');
+        return;
+      }
+
       // Create new conversation
       const title = exampleQuestion.length > 50 
         ? exampleQuestion.substring(0, 50) + '...' 
         : exampleQuestion;
       
+      console.log('Creating conversation with authenticated user:', !!user);
       const newConversationId = await createConversation(title, exampleQuestion);
       if (!newConversationId) {
         console.error('Failed to create conversation for example');
@@ -156,35 +242,12 @@ export default function ChatScreen() {
       
       setCurrentConversationId(newConversationId);
 
-      // Create user message
-      const userMessage: Message = {
-        id: Date.now().toString(),
-        text: exampleQuestion,
-        isUser: true,
-        timestamp: new Date(),
-      };
-
-      // Create bot message with guidance
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: parsedGuidance.intro,
-        isUser: false,
-        timestamp: new Date(),
-        guidance: parsedGuidance,
-        isStreaming: false,
-        isCancelled: true, // Don't animate for examples
-      };
-
-      // Update local state
-      setMessages([userMessage, botMessage]);
-      setConversationStarted(true);
-
       // Save messages to database
       try {
         await addMessageToConversation(newConversationId, exampleQuestion, true);
-        await addMessageToConversation(newConversationId, parsedGuidance.intro, false, {
+        await addMessageToConversation(newConversationId, guidance.intro || 'Guidance response', false, {
           isFollowUp: false,
-          guidance: parsedGuidance,
+          guidance: guidance,
         });
         
         // Update conversation stats
@@ -192,38 +255,72 @@ export default function ChatScreen() {
           preview: exampleQuestion.substring(0, 100),
           last_message_at: new Date().toISOString(),
         });
+        
+        console.log('Example conversation saved successfully');
       } catch (error) {
         console.error('Failed to save example conversation messages:', error);
       }
     } catch (error) {
       console.error('Error handling example conversation:', error);
+      setIsLoading(false);
     }
   };
 
-  // Reset when navigating to a new conversation (no conversationId)
+  // Handle example conversation by pre-populating messages
   useEffect(() => {
-    if (!conversationId && !initialPrompt && !exampleQuestion && hasProcessedInitialSetup) {
-      setCurrentConversationId(null);
-      setMessages([]);
-      setConversationStarted(false);
-      setSuggestions(getRandomSuggestions(2));
+    console.log('Example conversation effect triggered:', {
+      exampleQuestion,
+      hasExampleGuidanceResponse: !!exampleGuidanceResponse,
+      hasProcessedInitialSetup,
+      conversationStarted,
+    });
+    
+    if (exampleQuestion && exampleGuidanceResponse && hasProcessedInitialSetup) {
+      console.log('Calling handleExampleConversation');
+      handleExampleConversation();
     }
-  }, [conversationId, initialPrompt, exampleQuestion, hasProcessedInitialSetup]);
+  }, [exampleQuestion, exampleGuidanceResponse, hasProcessedInitialSetup]);
 
   // Separate effect for loading messages when conversationId changes
   useEffect(() => {
     if (conversationId && dbMessages.length > 0) {
-      const loadedMessages: Message[] = dbMessages.map(msg => ({
-        id: msg.id,
-        text: msg.content,
-        isUser: msg.is_user,
-        timestamp: new Date(msg.created_at || ''),
-        isFollowUp: msg.guidance_data?.isFollowUp || false,
-        guidance: msg.guidance_data?.guidance || undefined,
-        simpleResponse: msg.guidance_data?.simpleResponse || undefined,
-        isStreaming: false,
-        isCancelled: true, // This ensures no streaming animation for historical messages
-      }));
+      console.log('Loading conversation history:', {
+        conversationId,
+        messageCount: dbMessages.length,
+        messages: dbMessages.map(msg => ({
+          id: msg.id,
+          isUser: msg.is_user,
+          content: msg.content?.substring(0, 50) + '...',
+          hasGuidanceData: !!msg.guidance_data,
+          guidanceData: msg.guidance_data,
+        }))
+      });
+      
+      const loadedMessages: Message[] = dbMessages.map(msg => {
+        const message: Message = {
+          id: msg.id,
+          text: msg.content,
+          isUser: msg.is_user,
+          timestamp: new Date(msg.created_at || Date.now().toString()),
+          isFollowUp: (msg.guidance_data as any)?.isFollowUp || false,
+          guidance: (msg.guidance_data as any)?.guidance || undefined,
+          simpleResponse: (msg.guidance_data as any)?.simpleResponse || undefined,
+          isStreaming: false,
+          isCancelled: true, // This ensures no streaming animation for historical messages
+        };
+        
+        console.log('Mapped message:', {
+          id: message.id,
+          isUser: message.isUser,
+          hasGuidance: !!message.guidance,
+          hasSimpleResponse: !!message.simpleResponse,
+          isFollowUp: message.isFollowUp,
+        });
+        
+        return message;
+      });
+      
+      console.log('Setting loaded messages:', loadedMessages.length);
       setMessages(loadedMessages);
       
       // Scroll to bottom when loading conversation history
@@ -232,45 +329,13 @@ export default function ChatScreen() {
       }, 100);
     }
   }, [conversationId, dbMessages]);
-
-  // Remove the old effects completely
-  /*
-  useEffect(() => {
-    // Load existing conversation messages
-    if (conversationId && dbMessages.length > 0) {
-      const loadedMessages: Message[] = dbMessages.map(msg => ({
-        id: msg.id,
-        text: msg.content,
-        isUser: msg.is_user,
-        timestamp: new Date(msg.created_at || ''),
-        isFollowUp: msg.guidance_data?.isFollowUp || false,
-        guidance: msg.guidance_data?.guidance || undefined,
-        simpleResponse: msg.guidance_data?.simpleResponse || undefined,
-        isStreaming: false,
-        isCancelled: false,
-      }));
-      setMessages(loadedMessages);
-      setConversationStarted(true);
-      
-      // Scroll to bottom when loading conversation history
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: false });
-      }, 100);
-    } else if (!conversationId) {
-      // Clear messages for new conversation
-      setMessages([]);
-      setConversationStarted(false);
-      setCurrentConversationId(null);
-    }
-  }, [conversationId, dbMessages]);
-  */
 
   const handleSendMessage = async (text?: string) => {
     const messageText = text || inputText.trim();
     if (!messageText) return;
     if (isLoading) return;
 
-    let conversationIdToUse = currentConversationId || conversationId;
+    let conversationIdToUse = currentConversationId || conversationId || null;
 
     // Create new conversation if this is the first message
     if (!conversationIdToUse) {
@@ -297,6 +362,10 @@ export default function ChatScreen() {
     setInputText('');
     setIsLoading(true);
     
+    // Generate a unique request ID for this API call
+    const requestId = Date.now().toString();
+    setCurrentRequestId(requestId);
+    
     // Save user message to database immediately
     try {
       if (conversationIdToUse) {
@@ -311,7 +380,17 @@ export default function ChatScreen() {
     const isFollowUp = conversationStarted && messages.length > 0;
 
     try {
+      console.log('Starting API call to getBuddhistGuidance...');
       const guidance = await getBuddhistGuidance(messageText, isFollowUp);
+      console.log('API call completed successfully!');
+      
+      // Debug: Log the guidance response
+      console.log('Guidance response received:', {
+        isFollowUp: guidance.isFollowUp,
+        hasSimpleResponse: !!guidance.simpleResponse,
+        intro: guidance.intro?.substring(0, 100) + '...',
+        hasGuidance: !!guidance.intro,
+      });
       
       const messageId = (Date.now() + 1).toString();
       
@@ -319,6 +398,7 @@ export default function ChatScreen() {
       
       if (guidance.isFollowUp && guidance.simpleResponse) {
         // Follow-up response - simple format
+        console.log('Creating follow-up message with simple response');
         botMessage = {
           id: messageId,
           text: guidance.simpleResponse,
@@ -330,6 +410,7 @@ export default function ChatScreen() {
         };
       } else {
         // Initial structured response
+        console.log('Creating structured guidance message');
         botMessage = {
           id: messageId,
           text: guidance.intro,
@@ -338,7 +419,24 @@ export default function ChatScreen() {
           isStreaming: true,
           guidance,
         };
+        
+        // Debug: Log the guidance object structure
+        console.log('Guidance object structure:', {
+          hasIntro: !!guidance.intro,
+          hasPracticalSteps: !!guidance.practicalSteps,
+          hasReflection: !!guidance.reflection,
+          hasScripture: !!guidance.scripture,
+          hasOutro: !!guidance.outro,
+          introLength: guidance.intro?.length || 0,
+        });
       }
+      
+      console.log('Adding bot message to state:', {
+        messageId,
+        isFollowUp: botMessage.isFollowUp,
+        hasGuidance: !!botMessage.guidance,
+        hasSimpleResponse: !!botMessage.simpleResponse,
+      });
       
       setMessages(prev => [...prev, botMessage]);
       setStreamingMessageId(messageId);
@@ -382,7 +480,12 @@ export default function ChatScreen() {
         setConversationStarted(true);
       }
     } catch (error) {
-      console.error('API Error:', error);
+      console.error('API Error occurred:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+      });
+      
       Alert.alert(
         'Error',
         'Failed to get guidance. Please try again.'
@@ -391,6 +494,7 @@ export default function ChatScreen() {
       // Remove the user message from UI if API call failed
       setMessages(prev => prev.slice(0, -1));
     } finally {
+      console.log('Setting isLoading to false');
       setIsLoading(false);
     }
   };
@@ -449,6 +553,15 @@ export default function ChatScreen() {
   );
 
   const renderMessage = (message: Message) => {
+    console.log('Rendering message:', {
+      id: message.id,
+      isUser: message.isUser,
+      isFollowUp: message.isFollowUp,
+      hasGuidance: !!message.guidance,
+      hasSimpleResponse: !!message.simpleResponse,
+      text: message.text?.substring(0, 50) + '...',
+    });
+    
     if (message.isUser) {
       return (
         <View key={message.id} style={styles.userMessageContainer}>
@@ -461,6 +574,7 @@ export default function ChatScreen() {
     
     // Handle follow-up messages with simple streaming text
     if (message.isFollowUp && message.simpleResponse) {
+      console.log('Rendering follow-up message with simple response');
       return (
         <View key={message.id} style={styles.botMessageContainer}>
           <View style={styles.botIconContainer}>
@@ -493,18 +607,21 @@ export default function ChatScreen() {
     }
     
     // Handle structured guidance messages
+    console.log('Rendering structured guidance message');
     return (
       <View key={message.id} style={styles.botMessageContainer}>
         <View style={styles.botIconContainer}>
           <Image source={require('../../assets/images/logo2.jpg')} style={styles.botIconImage} />
         </View>
         <View style={styles.botMessage}>
-          {message.guidance && (
+          {message.guidance ? (
             <StreamingGuidance
               guidance={message.guidance}
               speed={speedValue}
               isCancelled={message.isCancelled}
             />
+          ) : (
+            <Text style={styles.followUpText}>{message.text}</Text>
           )}
         </View>
       </View>
@@ -540,11 +657,20 @@ export default function ChatScreen() {
               <Text style={styles.emptyStateText}>
                 Ask for guidance on any challenge you're facing, and receive compassionate Buddhist wisdom.
               </Text>
-             <SuggestionBubbles />
+              <SuggestionBubbles />
             </View>
           )}
           
-          {messages.map(renderMessage)}
+          {messages.map((message, index) => {
+            console.log(`Message ${index}:`, {
+              id: message.id,
+              isUser: message.isUser,
+              text: message.text?.substring(0, 30) + '...',
+              hasGuidance: !!message.guidance,
+              hasSimpleResponse: !!message.simpleResponse,
+            });
+            return renderMessage(message);
+          })}
           
           {isLoading && (
             <TypingIndicator />

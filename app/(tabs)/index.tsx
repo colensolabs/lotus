@@ -27,11 +27,18 @@ export default function HomeScreen() {
         pathname: '/(tabs)/chat', 
         params: { 
           exampleQuestion,
-          exampleGuidanceResponse: JSON.stringify(exampleGuidanceResponse)
+          exampleGuidanceResponse: JSON.stringify(exampleGuidanceResponse),
+          reset: Date.now().toString() // Force parameter change for different examples
         } 
       });
     } else {
-      router.replace('/(tabs)/chat');
+      // Force a complete reset by navigating with a unique parameter
+      router.replace({
+        pathname: '/(tabs)/chat',
+        params: { 
+          reset: Date.now().toString() // Force parameter change
+        }
+      });
     }
   };
   return (

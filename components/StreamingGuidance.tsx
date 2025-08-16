@@ -6,15 +6,15 @@ import { useHapticSettings } from '@/hooks/useHapticSettings';
 
 interface StreamingGuidanceProps {
   guidance: {
-    intro: string;
-    practicalSteps: string;
-    reflection: string;
-    scripture: {
+    intro?: string;
+    practicalSteps?: string;
+    reflection?: string;
+    scripture?: {
       text: string;
       source: string;
       explanation: string;
     };
-    outro: string;
+    outro?: string;
   };
   speed: number;
   onRetry?: () => void;
@@ -32,31 +32,49 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
   const [showStopButton, setShowStopButton] = useState(true);
   const { isEnabled: hapticsEnabled } = useHapticSettings();
 
+  // Debug logging
+  console.log('StreamingGuidance render:', {
+    currentSection,
+    isCancelled,
+    isStreamingCancelled,
+    hasIntro: !!guidance.intro,
+    hasPracticalSteps: !!guidance.practicalSteps,
+    hasReflection: !!guidance.reflection,
+    hasScripture: !!guidance.scripture,
+    hasOutro: !!guidance.outro,
+    practicalStepsLength: guidance.practicalSteps?.length || 0,
+  });
+
   const handleSectionComplete = () => {
     if (isStreamingCancelled) return;
 
+    console.log('Section complete, transitioning from:', currentSection);
+
     switch (currentSection) {
       case 'intro':
+        console.log('Transitioning from intro to steps');
         setCurrentSection('steps');
         break;
       case 'steps':
+        console.log('Transitioning from steps to reflection');
         setCurrentSection('reflection');
         break;
       case 'reflection':
+        console.log('Transitioning from reflection to scripture');
         setCurrentSection('scripture');
         break;
       case 'scripture':
+        console.log('Transitioning from scripture to explanation');
         setCurrentSection('explanation');
         break;
       case 'explanation':
+        console.log('Transitioning from explanation to outro');
         setCurrentSection('outro');
         break;
       case 'outro':
-        setCurrentSection('outro');
-        setShowStopButton(false);
-        break;
-      case 'outro':
+        console.log('Transitioning from outro to complete');
         setCurrentSection('complete');
+        setShowStopButton(false);
         break;
     }
   };
@@ -67,6 +85,8 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
   };
 
   const renderSteps = () => {
+    if (!guidance.practicalSteps) return null;
+    
     const steps = guidance.practicalSteps
       .split(/[•\n]/)
       .filter(step => step.trim().length > 0);
@@ -88,38 +108,50 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
   return (
     <View style={styles.container}>
       {/* Intro Section */}
-      <StreamingText
-        text={guidance.intro}
-        speed={speed}
-        onComplete={handleSectionComplete}
-        isCancelled={isStreamingCancelled}
-        hapticsEnabled={hapticsEnabled}
-        style={styles.introText}
-      />
-
-      {/* Practical Steps Section */}
-      {(currentSection !== 'intro' || isCancelled) && (
-        <View style={styles.practicalStepsCard}>
-          <Text style={styles.sectionTitle}>Practical Steps</Text>
-          {currentSection === 'steps' && !isCancelled ? (
-            <View style={styles.stepsContainer}>
-              <StreamingText
-                text={guidance.practicalSteps}
-                speed={speed}
-                onComplete={handleSectionComplete}
-                isCancelled={isStreamingCancelled}
-                hapticsEnabled={hapticsEnabled}
-                style={styles.stepsText}
-              />
-            </View>
-          ) : (
-            renderSteps()
-          )}
-        </View>
+      {guidance.intro && (
+        <StreamingText
+          text={guidance.intro}
+          speed={speed}
+          onComplete={handleSectionComplete}
+          isCancelled={isStreamingCancelled}
+          hapticsEnabled={hapticsEnabled}
+          style={styles.introText}
+        />
       )}
 
+                    {/* Practical Steps Section */}
+       {(() => {
+         const shouldShow = guidance.practicalSteps && (currentSection === 'steps' || currentSection === 'reflection' || currentSection === 'scripture' || currentSection === 'explanation' || currentSection === 'outro' || currentSection === 'complete' || isCancelled || isStreamingCancelled);
+         console.log('Practical steps condition:', {
+           hasPracticalSteps: !!guidance.practicalSteps,
+           currentSection,
+           isCancelled,
+           isStreamingCancelled,
+           shouldShow,
+         });
+         return shouldShow;
+       })() && (
+         <View style={styles.practicalStepsCard}>
+           <Text style={styles.sectionTitle}>Practical Steps</Text>
+           {currentSection === 'steps' && !isCancelled ? (
+             <View style={styles.stepsContainer}>
+               <StreamingText
+                 text={guidance.practicalSteps}
+                 speed={speed}
+                 onComplete={handleSectionComplete}
+                 isCancelled={isStreamingCancelled}
+                 hapticsEnabled={hapticsEnabled}
+                 style={styles.stepsText}
+               />
+             </View>
+           ) : (
+             renderSteps()
+           )}
+         </View>
+       )}
+
       {/* Reflection Section */}
-      {(currentSection === 'reflection' || currentSection === 'scripture' || currentSection === 'explanation' || currentSection === 'complete' || isCancelled) && (
+      {guidance.reflection && (currentSection === 'reflection' || currentSection === 'scripture' || currentSection === 'explanation' || currentSection === 'complete' || isCancelled) && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Reflection</Text>
           {currentSection === 'reflection' && !isStreamingCancelled ? (
@@ -138,7 +170,7 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
       )}
 
       {/* Scripture Section */}
-      {(currentSection === 'scripture' || currentSection === 'explanation' || currentSection === 'complete' || isStreamingCancelled) && (
+      {guidance.scripture && (currentSection === 'scripture' || currentSection === 'explanation' || currentSection === 'complete' || isStreamingCancelled) && (
         <View style={styles.scriptureSection}>
           <Text style={styles.sectionTitle}>Buddhist Teaching</Text>
           {currentSection === 'scripture' && !isStreamingCancelled ? (
@@ -160,7 +192,7 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
       )}
 
       {/* Explanation Section */}
-      {(currentSection === 'explanation' || currentSection === 'outro' || currentSection === 'complete' || isStreamingCancelled) && (
+      {guidance.scripture && (currentSection === 'explanation' || currentSection === 'outro' || currentSection === 'complete' || isStreamingCancelled) && (
         <View style={styles.explanationSection}>
           <Text style={styles.explanationTitle}>Understanding the Teaching</Text>
           {currentSection === 'explanation' && !isStreamingCancelled ? (
@@ -362,10 +394,10 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  stopButtonText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
-    marginLeft: 4,
-  },
-});
+     stopButtonText: {
+     color: '#FFFFFF',
+     fontSize: 12,
+     fontWeight: '600',
+     marginLeft: 4,
+   },
+ });

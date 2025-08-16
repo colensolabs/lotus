@@ -34,7 +34,10 @@ export default function ConversationsScreen() {
   };
 
   const handleStartNewChat = () => {
-    router.replace('/(tabs)/chat');
+    router.replace({
+      pathname: '/(tabs)/chat',
+      params: {} // Explicitly clear all parameters
+    });
   };
 
   const handleOpenConversation = (conversationId: string) => {
