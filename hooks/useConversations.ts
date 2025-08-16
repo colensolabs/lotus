@@ -59,7 +59,7 @@ export const useConversations = () => {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       console.log('🔐 Session check:', { session: !!session, sessionError, userId: session?.user?.id });
       
-      if (!session) {
+      if (!session || !session.user) {
         console.log('❌ No valid session found');
         return null;
       }
