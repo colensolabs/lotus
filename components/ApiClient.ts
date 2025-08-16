@@ -1,3 +1,5 @@
+import { supabase } from '@/lib/supabase';
+
 interface BuddhistGuidanceResponse {
   intro: string;
   practicalSteps: string;
@@ -300,5 +302,4 @@ const apiInstance = new BuddhistGuidanceAPI();
 
 export const getBuddhistGuidance = async (message: string, isFollowUp: boolean = false): Promise<BuddhistGuidanceResponse> => {
   return apiInstance.getBuddhistGuidance(message, isFollowUp);
-import { supabase } from '@/lib/supabase';
 };
