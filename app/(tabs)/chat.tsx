@@ -84,6 +84,7 @@ export default function ChatScreen() {
   useEffect(() => {
     if (initialPrompt && isExample === 'true' && !hasProcessedInitialSetup) {
       setHasProcessedInitialSetup(true);
+     setConversationStarted(true);
       // Auto-send the example question after a short delay
       setTimeout(() => {
         handleSendMessage(initialPrompt);
@@ -106,9 +107,10 @@ export default function ChatScreen() {
         // This is a new conversation with an initial prompt
         setCurrentConversationId(null);
         setMessages([]);
-        setConversationStarted(false);
-        console.log('Initial prompt disabled:', initialPrompt);
-        setConversationStarted(true);
+       // Don't set conversationStarted here - let the auto-send effect handle it
+       if (isExample !== 'true') {
+         setConversationStarted(true);
+       }
       } else {
         // This is a completely new conversation with no initial prompt
         setCurrentConversationId(null);
@@ -121,7 +123,7 @@ export default function ChatScreen() {
 
   // Reset when navigating to a new conversation (no conversationId)
   useEffect(() => {
-    if (!conversationId && hasProcessedInitialSetup) {
+   if (!conversationId && !initialPrompt && hasProcessedInitialSetup) {
       setCurrentConversationId(null);
       setMessages([]);
       setConversationStarted(false);
