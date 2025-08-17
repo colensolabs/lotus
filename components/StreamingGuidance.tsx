@@ -34,6 +34,8 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
 
   // Debug logging
   console.log('StreamingGuidance render:', {
+    speed,
+    speedType: typeof speed,
     currentSection,
     isCancelled,
     isStreamingCancelled,

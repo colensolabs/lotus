@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Image } from 'react-native';
 import { useState, useEffect } from 'react';
 import { Bot as Lotus, Bell, Heart, MessageCircle, CircleHelp as HelpCircle, Star, Vibrate, User, Settings as SettingsIcon, Shield } from 'lucide-react-native';
@@ -6,12 +6,12 @@ import { LogOut } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useStreamingSpeed, StreamingSpeed } from '@/hooks/useStreamingSpeed';
 import { useHapticSettings } from '@/hooks/useHapticSettings';
+import { useNotifications } from '@/hooks/useNotifications';
+import { usePrivacySettings } from '@/hooks/usePrivacySettings';
 import { useAuth } from '@/hooks/useAuth';
-import { useUserPreferences } from '@/hooks/useUserPreferences';
-import { useConversations } from '@/hooks/useConversations';
 import { triggerSelectionHaptic } from '@/utils/haptics';
 import { supabase } from '@/lib/supabase';
-import { Alert } from 'react-native';
+import { CustomSwitch } from '@/components/CustomSwitch';
 
 export default function SettingsScreen() {
   const { speed, updateSpeed } = useStreamingSpeed();
@@ -58,9 +58,9 @@ export default function SettingsScreen() {
 
     const StreamingSpeedSelector = () => {
     const speeds: { value: StreamingSpeed; label: string; description: string }[] = [
-      { value: 'slow', label: 'Slow', description: '~15 chars/sec' },
-      { value: 'normal', label: 'Normal', description: '~30 chars/sec' },
-      { value: 'fast', label: 'Fast', description: '~50 chars/sec' },
+      { value: 'slow', label: 'Slow', description: '~8 chars/sec' },
+      { value: 'normal', label: 'Normal', description: '~25 chars/sec' },
+      { value: 'fast', label: 'Fast', description: '~60 chars/sec' },
     ];
 
     return (
@@ -98,9 +98,29 @@ export default function SettingsScreen() {
     );
   };
 
-  // Separate component for haptic toggle to isolate it
+  // Haptic Feedback Toggle
   const HapticToggle = () => {
-    const { isEnabled: hapticsEnabled, updateSetting: updateHaptics } = useHapticSettings();
+    const { isEnabled: hapticsEnabled, isLoading, updateSetting: updateHaptics } = useHapticSettings();
+    
+    const handleHapticToggle = (value: boolean) => {
+      triggerSelectionHaptic();
+      updateHaptics(value);
+    };
+    
+    // Don't render until loading is complete
+    if (isLoading || hapticsEnabled === null) {
+      return (
+        <SettingsRow
+          icon={<Vibrate size={20} color="#D4AF37" strokeWidth={1.5} />}
+          title="Haptic Feedback"
+          subtitle="Feel the typewriter effect"
+          rightElement={
+            <View style={{ width: 51, height: 31, backgroundColor: '#E8E8E8', borderRadius: 16 }} />
+          }
+          showArrow={false}
+        />
+      );
+    }
     
     return (
       <SettingsRow
@@ -108,11 +128,12 @@ export default function SettingsScreen() {
         title="Haptic Feedback"
         subtitle="Feel the typewriter effect"
         rightElement={
-          <Switch
+          <CustomSwitch
             value={hapticsEnabled}
-            onValueChange={updateHaptics}
+            onValueChange={handleHapticToggle}
             trackColor={{ false: '#E8E8E8', true: '#D4AF37' }}
             thumbColor="#FEFEFE"
+            style={{ transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }] }}
           />
         }
         showArrow={false}
@@ -120,9 +141,29 @@ export default function SettingsScreen() {
     );
   };
 
-  // Separate component for notifications toggle to isolate it
+  // Notifications Toggle
   const NotificationsToggle = () => {
-    const [notifications, setNotifications] = useState(true);
+    const { isEnabled: notificationsEnabled, isLoading, updateSetting: updateNotifications } = useNotifications();
+    
+    const handleNotificationsToggle = (value: boolean) => {
+      triggerSelectionHaptic();
+      updateNotifications(value);
+    };
+    
+    // Don't render until loading is complete
+    if (isLoading || notificationsEnabled === null) {
+      return (
+        <SettingsRow
+          icon={<Bell size={20} color="#D4AF37" strokeWidth={1.5} />}
+          title="Notifications"
+          subtitle="Daily wisdom and reminders"
+          rightElement={
+            <View style={{ width: 51, height: 31, backgroundColor: '#E8E8E8', borderRadius: 16 }} />
+          }
+          showArrow={false}
+        />
+      );
+    }
     
     return (
       <SettingsRow
@@ -130,11 +171,12 @@ export default function SettingsScreen() {
         title="Notifications"
         subtitle="Daily wisdom and reminders"
         rightElement={
-          <Switch
-            value={notifications}
-            onValueChange={setNotifications}
+          <CustomSwitch
+            value={notificationsEnabled}
+            onValueChange={handleNotificationsToggle}
             trackColor={{ false: '#E8E8E8', true: '#D4AF37' }}
             thumbColor="#FEFEFE"
+            style={{ transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }] }}
           />
         }
         showArrow={false}
@@ -142,72 +184,42 @@ export default function SettingsScreen() {
     );
   };
 
-    // Separate component for privacy toggle to isolate it
+  // Privacy Toggle
   const PrivacyToggle = () => {
-    const { preferences: userPrefs, updateSaveConversations } = useUserPreferences();
-    const { conversations } = useConversations();
-    const { user } = useAuth();
+    const { isPrivacyEnabled, isLoading, updatePrivacySetting } = usePrivacySettings();
     
-    // Calculate the correct switch value directly from preferences (like haptic toggle)
-    const switchValue = !(userPrefs?.save_conversations ?? false);
-    
-    const handlePrivacyToggle = async (newValue: boolean) => {
-      console.log('Privacy toggle clicked:', { newValue, currentPrefs: userPrefs?.save_conversations });
-      
-      if (newValue) {
-        // Switch is ON - Turn privacy ON (don't save conversations)
-        if (conversations.length > 0) {
-          Alert.alert(
-            'Delete Existing Conversations?',
-            `You have ${conversations.length} saved conversations. Turning on privacy will delete all existing conversations and prevent future conversations from being saved. This cannot be undone.`,
-            [
-              {
-                text: 'Cancel',
-                style: 'cancel',
-              },
-              {
-                text: 'Delete All',
-                style: 'destructive',
-                onPress: async () => {
-                  try {
-                    const { error } = await supabase
-                      .from('conversations')
-                      .update({ is_archived: true })
-                      .eq('user_id', user?.id);
-
-                    if (error) throw error;
-                    await updateSaveConversations(false);
-                    console.log('Privacy enabled - conversations deleted');
-                  } catch (error) {
-                    console.error('Error deleting conversations:', error);
-                    Alert.alert('Error', 'Failed to delete conversations');
-                  }
-                },
-              },
-            ]
-          );
-        } else {
-          await updateSaveConversations(false);
-          console.log('Privacy enabled - no conversations to delete');
-        }
-      } else {
-        // Switch is OFF - Turn privacy OFF (save conversations)
-        await updateSaveConversations(true);
-        console.log('Privacy disabled - conversations will be saved');
-      }
+    const handlePrivacyToggle = (value: boolean) => {
+      triggerSelectionHaptic();
+      updatePrivacySetting(value);
     };
+    
+    // Don't render until loading is complete
+    if (isLoading || isPrivacyEnabled === null) {
+      return (
+        <SettingsRow
+          icon={<Shield size={20} color="#D4AF37" strokeWidth={1.5} />}
+          title="Privacy Mode"
+          subtitle="When ON, conversations are not saved"
+          rightElement={
+            <View style={{ width: 51, height: 31, backgroundColor: '#E8E8E8', borderRadius: 16 }} />
+          }
+          showArrow={false}
+        />
+      );
+    }
     
     return (
       <SettingsRow
         icon={<Shield size={20} color="#D4AF37" strokeWidth={1.5} />}
         title="Privacy Mode"
-        subtitle="Toggle OFF to save conversations, ON to delete them"
+        subtitle="When ON, conversations are not saved"
         rightElement={
-          <Switch
-            value={switchValue}
+          <CustomSwitch
+            value={isPrivacyEnabled}
             onValueChange={handlePrivacyToggle}
             trackColor={{ false: '#E8E8E8', true: '#D4AF37' }}
             thumbColor="#FEFEFE"
+            style={{ transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }] }}
           />
         }
         showArrow={false}
@@ -229,26 +241,50 @@ export default function SettingsScreen() {
     onPress?: () => void;
     rightElement?: React.ReactNode;
     showArrow?: boolean;
-  }) => (
-    <TouchableOpacity 
-      style={styles.settingsRow} 
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      <View style={styles.settingsRowLeft}>
-        <View style={styles.settingsIconContainer}>
-          {icon}
+  }) => {
+    // If there's a rightElement (like a Switch), don't wrap in TouchableOpacity
+    // to avoid interfering with the Switch's touch handling
+    if (rightElement) {
+      return (
+        <View style={styles.settingsRow}>
+          <View style={styles.settingsRowLeft}>
+            <View style={styles.settingsIconContainer}>
+              {icon}
+            </View>
+            <View style={styles.settingsTextContainer}>
+              <Text style={styles.settingsTitle}>{title}</Text>
+              {subtitle && <Text style={styles.settingsSubtitle}>{subtitle}</Text>}
+            </View>
+          </View>
+          <View style={styles.settingsRowRight}>
+            {rightElement}
+          </View>
         </View>
-        <View style={styles.settingsTextContainer}>
-          <Text style={styles.settingsTitle}>{title}</Text>
-          {subtitle && <Text style={styles.settingsSubtitle}>{subtitle}</Text>}
+      );
+    }
+
+    // For rows without rightElement, use TouchableOpacity for navigation
+    return (
+      <TouchableOpacity 
+        style={styles.settingsRow} 
+        onPress={onPress}
+        activeOpacity={0.7}
+      >
+        <View style={styles.settingsRowLeft}>
+          <View style={styles.settingsIconContainer}>
+            {icon}
+          </View>
+          <View style={styles.settingsTextContainer}>
+            <Text style={styles.settingsTitle}>{title}</Text>
+            {subtitle && <Text style={styles.settingsSubtitle}>{subtitle}</Text>}
+          </View>
         </View>
-      </View>
-      <View style={styles.settingsRowRight}>
-        {rightElement}
-      </View>
-    </TouchableOpacity>
-  );
+        <View style={styles.settingsRowRight}>
+          {showArrow && <Text style={styles.arrow}>›</Text>}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
@@ -442,6 +478,11 @@ const styles = StyleSheet.create({
   settingsRowRight: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  arrow: {
+    fontSize: 18,
+    color: '#D4AF37',
+    fontWeight: '600',
   },
   footer: {
     paddingHorizontal: 24,

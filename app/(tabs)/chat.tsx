@@ -71,7 +71,12 @@ export default function ChatScreen() {
     conversationId?: string;
     reset?: string;
   }>();
-  const { speedValue } = useStreamingSpeed();
+  const { speedValue, speed } = useStreamingSpeed();
+  
+  // Debug logging for speed value
+  useEffect(() => {
+    console.log('Chat screen speed value changed:', { speedValue, speed });
+  }, [speedValue, speed]);
   const { createConversation, updateConversation } = useConversations();
   const { messages: dbMessages, addMessageToConversation, clearMessages } = useMessages(conversationId || null);
   const { user } = useAuth();
@@ -120,6 +125,7 @@ export default function ChatScreen() {
       initialPrompt: !!initialPrompt,
       exampleQuestion: !!exampleQuestion,
       exampleGuidanceResponse: !!exampleGuidanceResponse,
+      reset,
     });
     
     if (!hasProcessedInitialSetup) {
@@ -145,7 +151,7 @@ export default function ChatScreen() {
       }
       setHasProcessedInitialSetup(true);
     }
-  }, [conversationId, initialPrompt, exampleQuestion, exampleGuidanceResponse]);
+  }, [conversationId, initialPrompt, exampleQuestion, exampleGuidanceResponse, reset]);
 
   // Handle initial prompt by automatically sending it
   useEffect(() => {
@@ -280,13 +286,14 @@ export default function ChatScreen() {
       hasExampleGuidanceResponse: !!exampleGuidanceResponse,
       hasProcessedInitialSetup,
       conversationStarted,
+      reset,
     });
     
     if (exampleQuestion && exampleGuidanceResponse && hasProcessedInitialSetup) {
       console.log('Calling handleExampleConversation');
       handleExampleConversation();
     }
-  }, [exampleQuestion, exampleGuidanceResponse, hasProcessedInitialSetup]);
+  }, [exampleQuestion, exampleGuidanceResponse, hasProcessedInitialSetup, reset]);
 
   // Separate effect for loading messages when conversationId changes
   useEffect(() => {
@@ -594,14 +601,14 @@ export default function ChatScreen() {
             <Image source={require('../../assets/images/logo2.jpg')} style={styles.botIconImage} />
           </View>
           <View style={styles.botMessage}>
-            <StreamingText
-              text={message.simpleResponse}
-              speed={speedValue}
-              onComplete={() => handleStreamingComplete(message.id)}
-              isCancelled={message.isCancelled}
-              hapticsEnabled={true}
-              style={styles.followUpText}
-            />
+                         <StreamingText
+               text={message.simpleResponse}
+               speed={speedValue}
+               onComplete={() => handleStreamingComplete(message.id)}
+               isCancelled={message.isCancelled}
+               hapticsEnabled={true}
+               style={styles.followUpText}
+             />
             {message.isStreaming && streamingMessageId === message.id && (
               <View style={styles.followUpControlsContainer}>
                 <TouchableOpacity
@@ -628,11 +635,11 @@ export default function ChatScreen() {
         </View>
         <View style={styles.botMessage}>
           {message.guidance ? (
-            <StreamingGuidance
-              guidance={message.guidance}
-              speed={speedValue}
-              isCancelled={message.isCancelled}
-            />
+                         <StreamingGuidance
+               guidance={message.guidance}
+               speed={speedValue}
+               isCancelled={message.isCancelled}
+             />
           ) : (
             <Text style={styles.followUpText}>{message.text}</Text>
           )}
