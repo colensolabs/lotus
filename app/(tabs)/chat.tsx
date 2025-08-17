@@ -416,6 +416,13 @@ export default function ChatScreen() {
       
       let botMessage: Message;
       
+      // Check if this is a safety guardrail response (has intro but no other guidance fields)
+      const isSafetyResponse = guidance.intro && 
+        !guidance.practicalSteps && 
+        !guidance.reflection && 
+        !guidance.scripture.text && 
+        !guidance.outro;
+
       if (guidance.isFollowUp && guidance.simpleResponse) {
         // Follow-up response - simple format
         console.log('Creating follow-up message with simple response');
@@ -427,6 +434,17 @@ export default function ChatScreen() {
           isStreaming: true,
           isFollowUp: true,
           simpleResponse: guidance.simpleResponse,
+        };
+      } else if (isSafetyResponse) {
+        // Safety guardrail response - display as simple alert message
+        console.log('Creating safety guardrail message');
+        botMessage = {
+          id: messageId,
+          text: guidance.intro,
+          isUser: false,
+          timestamp: new Date(),
+          isStreaming: true,
+          simpleResponse: guidance.intro, // Use simpleResponse to trigger simple display
         };
       } else {
         // Initial structured response
@@ -468,6 +486,11 @@ export default function ChatScreen() {
             ? {
                 isFollowUp: true,
                 simpleResponse: guidance.simpleResponse,
+              }
+            : isSafetyResponse
+            ? {
+                isFollowUp: false,
+                simpleResponse: guidance.intro, // Save safety response as simple response
               }
             : {
                 isFollowUp: false,
@@ -609,6 +632,40 @@ export default function ChatScreen() {
                hapticsEnabled={true}
                style={styles.followUpText}
              />
+            {message.isStreaming && streamingMessageId === message.id && (
+              <View style={styles.followUpControlsContainer}>
+                <TouchableOpacity
+                  style={styles.followUpShowButton}
+                  onPress={() => handleStreamingCancel(message.id)}
+                  activeOpacity={0.7}
+                >
+                  <Square size={16} color="#FFFFFF" strokeWidth={2} />
+                  <Text style={styles.followUpShowButtonText}>Show</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+      );
+    }
+    
+    // Handle safety guardrail messages (simple response without follow-up or guidance)
+    if (message.simpleResponse && !message.isFollowUp && !message.guidance) {
+      console.log('Rendering safety guardrail message');
+      return (
+        <View key={message.id} style={styles.botMessageContainer}>
+          <View style={styles.botIconContainer}>
+            <Image source={require('../../assets/images/logo2.jpg')} style={styles.botIconImage} />
+          </View>
+          <View style={styles.botMessage}>
+            <StreamingText
+              text={message.simpleResponse}
+              speed={speedValue}
+              onComplete={() => handleStreamingComplete(message.id)}
+              isCancelled={message.isCancelled}
+              hapticsEnabled={true}
+              style={styles.safetyAlertText}
+            />
             {message.isStreaming && streamingMessageId === message.id && (
               <View style={styles.followUpControlsContainer}>
                 <TouchableOpacity
@@ -961,6 +1018,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#2C2C2C',
     lineHeight: 24,
+  },
+  safetyAlertText: {
+    fontSize: 15,
+    color: '#D32F2F',
+    lineHeight: 24,
+    fontWeight: '500',
   },
   followUpControlsContainer: {
     flexDirection: 'row',
