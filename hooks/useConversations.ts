@@ -51,6 +51,24 @@ export const useConversations = () => {
   const createConversation = async (title: string, firstMessage?: string): Promise<string | null> => {
     if (!user) return null;
 
+    // Check if user has privacy enabled (don't save conversations)
+    try {
+      const { data: preferences } = await supabase
+        .from('user_preferences')
+        .select('save_conversations')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      // If save_conversations is false, don't create conversation
+      if (preferences && preferences.save_conversations === false) {
+        console.log('Privacy enabled - not saving conversation');
+        return null;
+      }
+    } catch (error) {
+      console.error('Error checking privacy settings:', error);
+      // Continue with saving if we can't check preferences
+    }
+
     try {
       console.log('Creating conversation:', { title, userId: user.id });
       

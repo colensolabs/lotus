@@ -1,21 +1,22 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Image } from 'react-native';
 import { useState, useEffect } from 'react';
-import { Bot as Lotus, Bell, Heart, MessageCircle, CircleHelp as HelpCircle, Star, Vibrate, User } from 'lucide-react-native';
+import { Bot as Lotus, Bell, Heart, MessageCircle, CircleHelp as HelpCircle, Star, Vibrate, User, Settings as SettingsIcon, Shield } from 'lucide-react-native';
 import { LogOut } from 'lucide-react-native';
+import { router } from 'expo-router';
 import { useStreamingSpeed, StreamingSpeed } from '@/hooks/useStreamingSpeed';
 import { useHapticSettings } from '@/hooks/useHapticSettings';
+import { useNotifications } from '@/hooks/useNotifications';
+import { usePrivacySettings } from '@/hooks/usePrivacySettings';
 import { useAuth } from '@/hooks/useAuth';
 import { triggerSelectionHaptic } from '@/utils/haptics';
 import { supabase } from '@/lib/supabase';
+import { CustomSwitch } from '@/components/CustomSwitch';
 
 export default function SettingsScreen() {
   const { speed, updateSpeed } = useStreamingSpeed();
-  const { isEnabled: hapticsEnabled, updateSetting: updateHaptics } = useHapticSettings();
   const { user, logout } = useAuth();
   const [userProfile, setUserProfile] = useState<{ display_name: string | null; email: string } | null>(null);
-  const [notifications, setNotifications] = useState(true);
-  const [saveConversations, setSaveConversations] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -53,11 +54,13 @@ export default function SettingsScreen() {
     }
   };
 
-  const StreamingSpeedSelector = () => {
+
+
+    const StreamingSpeedSelector = () => {
     const speeds: { value: StreamingSpeed; label: string; description: string }[] = [
-      { value: 'slow', label: 'Slow', description: '~15 chars/sec' },
-      { value: 'normal', label: 'Normal', description: '~30 chars/sec' },
-      { value: 'fast', label: 'Fast', description: '~50 chars/sec' },
+      { value: 'slow', label: 'Slow', description: '~8 chars/sec' },
+      { value: 'normal', label: 'Normal', description: '~25 chars/sec' },
+      { value: 'fast', label: 'Fast', description: '~60 chars/sec' },
     ];
 
     return (
@@ -69,10 +72,14 @@ export default function SettingsScreen() {
               styles.speedOption,
               speed === speedOption.value && styles.speedOptionSelected
             ]}
-            onPress={() => updateSpeed(speedOption.value)}
+            onPress={() => {
+              updateSpeed(speedOption.value);
+              if (speed !== speedOption.value) {
+                triggerSelectionHaptic();
+              }
+            }}
             activeOpacity={0.7}
           >
-            {speed === speedOption.value && triggerSelectionHaptic()}
             <Text style={[
               styles.speedOptionLabel,
               speed === speedOption.value && styles.speedOptionLabelSelected
@@ -91,6 +98,135 @@ export default function SettingsScreen() {
     );
   };
 
+  // Haptic Feedback Toggle
+  const HapticToggle = () => {
+    const { isEnabled: hapticsEnabled, isLoading, updateSetting: updateHaptics } = useHapticSettings();
+    
+    const handleHapticToggle = (value: boolean) => {
+      triggerSelectionHaptic();
+      updateHaptics(value);
+    };
+    
+    // Don't render until loading is complete
+    if (isLoading || hapticsEnabled === null) {
+      return (
+        <SettingsRow
+          icon={<Vibrate size={20} color="#D4AF37" strokeWidth={1.5} />}
+          title="Haptic Feedback"
+          subtitle="Feel the typewriter effect"
+          rightElement={
+            <View style={{ width: 51, height: 31, backgroundColor: '#E8E8E8', borderRadius: 16 }} />
+          }
+          showArrow={false}
+        />
+      );
+    }
+    
+    return (
+      <SettingsRow
+        icon={<Vibrate size={20} color="#D4AF37" strokeWidth={1.5} />}
+        title="Haptic Feedback"
+        subtitle="Feel the typewriter effect"
+        rightElement={
+          <CustomSwitch
+            value={hapticsEnabled}
+            onValueChange={handleHapticToggle}
+            trackColor={{ false: '#E8E8E8', true: '#D4AF37' }}
+            thumbColor="#FEFEFE"
+            style={{ transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }] }}
+          />
+        }
+        showArrow={false}
+      />
+    );
+  };
+
+  // Notifications Toggle
+  const NotificationsToggle = () => {
+    const { isEnabled: notificationsEnabled, isLoading, updateSetting: updateNotifications } = useNotifications();
+    
+    const handleNotificationsToggle = (value: boolean) => {
+      triggerSelectionHaptic();
+      updateNotifications(value);
+    };
+    
+    // Don't render until loading is complete
+    if (isLoading || notificationsEnabled === null) {
+      return (
+        <SettingsRow
+          icon={<Bell size={20} color="#D4AF37" strokeWidth={1.5} />}
+          title="Notifications"
+          subtitle="Daily wisdom and reminders"
+          rightElement={
+            <View style={{ width: 51, height: 31, backgroundColor: '#E8E8E8', borderRadius: 16 }} />
+          }
+          showArrow={false}
+        />
+      );
+    }
+    
+    return (
+      <SettingsRow
+        icon={<Bell size={20} color="#D4AF37" strokeWidth={1.5} />}
+        title="Notifications"
+        subtitle="Daily wisdom and reminders"
+        rightElement={
+          <CustomSwitch
+            value={notificationsEnabled}
+            onValueChange={handleNotificationsToggle}
+            trackColor={{ false: '#E8E8E8', true: '#D4AF37' }}
+            thumbColor="#FEFEFE"
+            style={{ transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }] }}
+          />
+        }
+        showArrow={false}
+      />
+    );
+  };
+
+  // Privacy Toggle
+  const PrivacyToggle = () => {
+    const { isPrivacyEnabled, isLoading, updatePrivacySetting } = usePrivacySettings();
+    
+    const handlePrivacyToggle = (value: boolean) => {
+      triggerSelectionHaptic();
+      updatePrivacySetting(value);
+    };
+    
+    // Don't render until loading is complete
+    if (isLoading || isPrivacyEnabled === null) {
+      return (
+        <SettingsRow
+          icon={<Shield size={20} color="#D4AF37" strokeWidth={1.5} />}
+          title="Privacy Mode"
+          subtitle="When ON, conversations are not saved"
+          rightElement={
+            <View style={{ width: 51, height: 31, backgroundColor: '#E8E8E8', borderRadius: 16 }} />
+          }
+          showArrow={false}
+        />
+      );
+    }
+    
+    return (
+      <SettingsRow
+        icon={<Shield size={20} color="#D4AF37" strokeWidth={1.5} />}
+        title="Privacy Mode"
+        subtitle="When ON, conversations are not saved"
+        rightElement={
+          <CustomSwitch
+            value={isPrivacyEnabled}
+            onValueChange={handlePrivacyToggle}
+            trackColor={{ false: '#E8E8E8', true: '#D4AF37' }}
+            thumbColor="#FEFEFE"
+            style={{ transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }] }}
+          />
+        }
+        showArrow={false}
+      />
+    );
+  };
+
   const SettingsRow = ({ 
     icon, 
     title, 
@@ -105,26 +241,50 @@ export default function SettingsScreen() {
     onPress?: () => void;
     rightElement?: React.ReactNode;
     showArrow?: boolean;
-  }) => (
-    <TouchableOpacity 
-      style={styles.settingsRow} 
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      <View style={styles.settingsRowLeft}>
-        <View style={styles.settingsIconContainer}>
-          {icon}
+  }) => {
+    // If there's a rightElement (like a Switch), don't wrap in TouchableOpacity
+    // to avoid interfering with the Switch's touch handling
+    if (rightElement) {
+      return (
+        <View style={styles.settingsRow}>
+          <View style={styles.settingsRowLeft}>
+            <View style={styles.settingsIconContainer}>
+              {icon}
+            </View>
+            <View style={styles.settingsTextContainer}>
+              <Text style={styles.settingsTitle}>{title}</Text>
+              {subtitle && <Text style={styles.settingsSubtitle}>{subtitle}</Text>}
+            </View>
+          </View>
+          <View style={styles.settingsRowRight}>
+            {rightElement}
+          </View>
         </View>
-        <View style={styles.settingsTextContainer}>
-          <Text style={styles.settingsTitle}>{title}</Text>
-          {subtitle && <Text style={styles.settingsSubtitle}>{subtitle}</Text>}
+      );
+    }
+
+    // For rows without rightElement, use TouchableOpacity for navigation
+    return (
+      <TouchableOpacity 
+        style={styles.settingsRow} 
+        onPress={onPress}
+        activeOpacity={0.7}
+      >
+        <View style={styles.settingsRowLeft}>
+          <View style={styles.settingsIconContainer}>
+            {icon}
+          </View>
+          <View style={styles.settingsTextContainer}>
+            <Text style={styles.settingsTitle}>{title}</Text>
+            {subtitle && <Text style={styles.settingsSubtitle}>{subtitle}</Text>}
+          </View>
         </View>
-      </View>
-      <View style={styles.settingsRowRight}>
-        {rightElement}
-      </View>
-    </TouchableOpacity>
-  );
+        <View style={styles.settingsRowRight}>
+          {showArrow && <Text style={styles.arrow}>›</Text>}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
@@ -156,65 +316,25 @@ export default function SettingsScreen() {
         </View>
         <StreamingSpeedSelector />
         
-        <SettingsRow
-          icon={<Vibrate size={20} color="#D4AF37" strokeWidth={1.5} />}
-          title="Haptic Feedback"
-          subtitle="Feel the typewriter effect"
-          rightElement={
-            <Switch
-              value={hapticsEnabled}
-              onValueChange={(value) => {
-                updateHaptics(value);
-                if (value) triggerSelectionHaptic();
-              }}
-              trackColor={{ false: '#E8E8E8', true: '#D4AF37' }}
-              thumbColor="#FEFEFE"
-            />
-          }
-          showArrow={false}
-        />
+        <HapticToggle />
+        <NotificationsToggle />
+        <PrivacyToggle />
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Personalization</Text>
         
         <SettingsRow
-          icon={<Bell size={20} color="#D4AF37" strokeWidth={1.5} />}
-          title="Notifications"
-          subtitle="Daily wisdom and reminders"
-          rightElement={
-            <Switch
-              value={notifications}
-              onValueChange={setNotifications}
-              trackColor={{ false: '#E8E8E8', true: '#D4AF37' }}
-              thumbColor="#FEFEFE"
-            />
-          }
-          showArrow={false}
-        />
-
-        <SettingsRow
-          icon={<MessageCircle size={20} color="#D4AF37" strokeWidth={1.5} />}
-          title="Privacy"
-          subtitle="Save conversations locally"
-          rightElement={
-            <Switch
-              value={saveConversations}
-              onValueChange={setSaveConversations}
-              trackColor={{ false: '#E8E8E8', true: '#D4AF37' }}
-              thumbColor="#FEFEFE"
-            />
-          }
-          showArrow={false}
+          icon={<User size={20} color="#D4AF37" strokeWidth={1.5} />}
+          title="Topics & Tradition"
+          subtitle="Customize your guidance experience"
+          onPress={() => router.push('/preferences')}
         />
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Support</Text>
         
-        <SettingsRow
-          icon={<Heart size={20} color="#F4A593" strokeWidth={1.5} />}
-          title="Connect with Teachers"
-          subtitle="Get personal guidance"
-          onPress={() => {}}
-        />
-
         <SettingsRow
           icon={<MessageCircle size={20} color="#F4A593" strokeWidth={1.5} />}
           title="Community"
@@ -358,6 +478,11 @@ const styles = StyleSheet.create({
   settingsRowRight: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  arrow: {
+    fontSize: 18,
+    color: '#D4AF37',
+    fontWeight: '600',
   },
   footer: {
     paddingHorizontal: 24,

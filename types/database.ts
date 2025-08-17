@@ -9,6 +9,44 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      user_preferences: {
+        Row: {
+          id: string
+          user_id: string
+          topics_of_interest: string[]
+          buddhist_tradition: 'secular' | 'general_buddhist' | 'theravada' | 'mahayana' | 'tibetan' | 'zen'
+          save_conversations: boolean | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          topics_of_interest?: string[]
+          buddhist_tradition?: 'secular' | 'general_buddhist' | 'theravada' | 'mahayana' | 'tibetan' | 'zen'
+          save_conversations?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          topics_of_interest?: string[]
+          buddhist_tradition?: 'secular' | 'general_buddhist' | 'theravada' | 'mahayana' | 'tibetan' | 'zen'
+          save_conversations?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       user_profiles: {
         Row: {
           id: string

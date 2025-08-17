@@ -3,12 +3,15 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { useAuth } from '@/hooks/useAuth';
+import { useSettingsPreloader } from '@/hooks/useSettingsPreloader';
 import { router } from 'expo-router';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
 export default function RootLayout() {
   useFrameworkReady();
   const { isAuthenticated, isLoading } = useAuth();
+  // Preload settings in the background
+  useSettingsPreloader();
 
   useEffect(() => {
     if (!isLoading) {

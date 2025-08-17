@@ -1,32 +1,44 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Image } from 'react-native';
 import { router } from 'expo-router';
-import { MessageCircle, Heart, Bot as Lotus, Compass, MessageSquare } from 'lucide-react-native';
+import { MessageCircle, Heart, Bot as Lotus, Compass, MessageSquare, RefreshCw } from 'lucide-react-native';
+import { useExampleConversations } from '@/hooks/useExampleConversations';
 
-const examplePrompts = [
-  {
-    title: "Relationship Communication",
-    text: "I'm having difficulty communicating with my partner during conflicts. How can I approach disagreements with more compassion?",
-    icon: Heart
-  },
-  {
-    title: "Career Decisions", 
-    text: "I'm torn between staying in a secure job I dislike and pursuing my passion with financial uncertainty. What should guide my decision?",
-    icon: Compass
-  },
-  {
-    title: "Family Tensions",
-    text: "My family has different values than me, leading to constant arguments. How can I maintain my beliefs while preserving family relationships?",
-    icon: MessageSquare
+// Icon mapping for different types of conversations
+const getIconForTitle = (title: string) => {
+  const titleLower = title.toLowerCase();
+  if (titleLower.includes('relationship') || titleLower.includes('communication')) {
+    return Heart;
+  } else if (titleLower.includes('career') || titleLower.includes('decision')) {
+    return Compass;
+  } else if (titleLower.includes('family') || titleLower.includes('tension')) {
+    return MessageSquare;
   }
-];
+  return MessageCircle; // Default icon
+};
 
 export default function HomeScreen() {
-  const handleStartChat = (prompt?: string) => {
-    if (prompt) {
-      router.replace({ pathname: '/(tabs)/chat', params: { initialPrompt: prompt } });
+  const { examples, isLoading, error } = useExampleConversations();
+
+  const handleStartChat = (exampleQuestion?: string, exampleGuidanceResponse?: any) => {
+    // Force navigation with replace to ensure clean state
+    if (exampleQuestion && exampleGuidanceResponse) {
+      router.replace({ 
+        pathname: '/(tabs)/chat', 
+        params: { 
+          exampleQuestion,
+          exampleGuidanceResponse: JSON.stringify(exampleGuidanceResponse),
+          reset: Date.now().toString() // Force parameter change for different examples
+        } 
+      });
     } else {
-      router.replace('/(tabs)/chat');
+      // Force a complete reset by navigating with a unique parameter
+      router.replace({
+        pathname: '/(tabs)/chat',
+        params: { 
+          reset: Date.now().toString() // Force parameter change
+        }
+      });
     }
   };
   return (
@@ -53,25 +65,40 @@ export default function HomeScreen() {
       <View style={styles.examplesSection}>
         <Text style={styles.sectionTitle}>Example conversations</Text>
         
-        {examplePrompts.map((prompt, index) => {
-          const IconComponent = prompt.icon;
-          return (
-          <TouchableOpacity
-            key={index}
-            style={styles.exampleCard}
-            onPress={() => handleStartChat(prompt.text)}
-            activeOpacity={0.7}
-          >
-            <View style={styles.exampleHeader}>
-              <View style={styles.exampleIconContainer}>
-                <IconComponent size={20} color="#D4AF37" strokeWidth={1.5} />
-              </View>
-              <Text style={styles.exampleTitle}>{prompt.title}</Text>
-            </View>
-            <Text style={styles.exampleText}>{prompt.text}</Text>
-          </TouchableOpacity>
-        );
-        })}
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <RefreshCw size={24} color="#D4AF37" strokeWidth={1.5} />
+            <Text style={styles.loadingText}>Loading examples...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>Failed to load examples</Text>
+          </View>
+        ) : examples.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No examples available</Text>
+          </View>
+        ) : (
+          examples.map((example) => {
+            const IconComponent = getIconForTitle(example.title);
+            return (
+              <TouchableOpacity
+                key={example.id}
+                style={styles.exampleCard}
+                onPress={() => handleStartChat(example.question, example.guidance_response)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.exampleHeader}>
+                  <View style={styles.exampleIconContainer}>
+                    <IconComponent size={20} color="#D4AF37" strokeWidth={1.5} />
+                  </View>
+                  <Text style={styles.exampleTitle}>{example.title}</Text>
+                </View>
+                <Text style={styles.exampleText}>{example.question}</Text>
+              </TouchableOpacity>
+            );
+          })
+        )}
       </View>
 
       <TouchableOpacity
@@ -174,6 +201,35 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#2C2C2C',
     marginBottom: 8,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 32,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B6B6B',
+    marginLeft: 12,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#F87171',
+    textAlign: 'center',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#6B6B6B',
+    textAlign: 'center',
   },
   exampleCard: {
     backgroundColor: '#FFFFFF',

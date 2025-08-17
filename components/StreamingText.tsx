@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Text, View, StyleSheet, Platform } from 'react-native';
+import { Text, StyleSheet } from 'react-native';
 import { triggerTypewriterHaptic } from '@/utils/haptics';
 
 interface StreamingTextProps {
@@ -21,11 +21,22 @@ export const StreamingText: React.FC<StreamingTextProps> = ({
   hapticsEnabled = false,
   style,
 }) => {
+  // Debug logging for received speed
+  console.log('StreamingText received speed:', { speed, speedType: typeof speed });
   const [displayedText, setDisplayedText] = useState('');
   const [isComplete, setIsComplete] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const currentIndexRef = useRef(0);
   const hapticCounterRef = useRef(0);
+  const previousSpeedRef = useRef(speed);
+
+  // Track speed changes
+  useEffect(() => {
+    if (previousSpeedRef.current !== speed) {
+      console.log('Speed changed from', previousSpeedRef.current, 'to', speed);
+      previousSpeedRef.current = speed;
+    }
+  }, [speed]);
 
   // Format text with bullet points for better display
   const formatText = (text: string) => {
@@ -35,17 +46,26 @@ export const StreamingText: React.FC<StreamingTextProps> = ({
       .replace(/^\d+\.\s*/gm, '• ');
   };
 
-  useEffect(() => {
+  // Clear interval helper
+  const clearCurrentInterval = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+
+  // Start streaming with current speed
+  const startStreaming = () => {
+    clearCurrentInterval();
+    
     if (isCancelled) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
       setDisplayedText(formatText(text));
       setIsComplete(true);
       onComplete?.();
       return;
     }
 
+    // Reset state
     setDisplayedText('');
     setIsComplete(false);
     currentIndexRef.current = 0;
@@ -54,9 +74,11 @@ export const StreamingText: React.FC<StreamingTextProps> = ({
     const formattedText = formatText(text);
     const intervalMs = 1000 / speed;
 
+    console.log('Starting streaming with speed:', speed, 'intervalMs:', intervalMs);
+
     intervalRef.current = setInterval(() => {
       if (currentIndexRef.current >= formattedText.length) {
-        clearInterval(intervalRef.current!);
+        clearCurrentInterval();
         setIsComplete(true);
         onComplete?.();
         return;
@@ -68,22 +90,22 @@ export const StreamingText: React.FC<StreamingTextProps> = ({
       setDisplayedText(nextText);
       currentIndexRef.current++;
       
-      // Trigger haptic feedback every few characters to avoid overwhelming
+      // Trigger haptic feedback every few characters
       if (hapticsEnabled) {
         hapticCounterRef.current++;
-        if (hapticCounterRef.current % 3 === 0) { // Every 3rd character
+        if (hapticCounterRef.current % 3 === 0) {
           triggerTypewriterHaptic();
         }
       }
 
       // Add pause after sentence endings
       if (currentChar === '.' || currentChar === '!' || currentChar === '?') {
-        clearInterval(intervalRef.current!);
+        clearCurrentInterval();
         setTimeout(() => {
           if (!isCancelled && currentIndexRef.current < formattedText.length) {
             intervalRef.current = setInterval(() => {
               if (currentIndexRef.current >= formattedText.length) {
-                clearInterval(intervalRef.current!);
+                clearCurrentInterval();
                 setIsComplete(true);
                 onComplete?.();
                 return;
@@ -101,14 +123,18 @@ export const StreamingText: React.FC<StreamingTextProps> = ({
               }
             }, intervalMs);
           }
-        }, Math.random() * 100 + 150); // 150-250ms pause
+        }, Math.random() * 100 + 150);
       }
     }, intervalMs);
+  };
+
+  // Effect to handle text and speed changes
+  useEffect(() => {
+    console.log('StreamingText effect triggered with speed:', speed);
+    startStreaming();
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      clearCurrentInterval();
     };
   }, [text, speed, isCancelled, hapticsEnabled]);
 
