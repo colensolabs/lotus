@@ -353,7 +353,7 @@ export default function SettingsScreen() {
           icon={<HelpCircle size={20} color="#F4A593" strokeWidth={1.5} />}
           title="Help & Feedback"
           subtitle="Get support or share thoughts"
-          onPress={() => {}}
+          onPress={() => router.push('/feedback')}
         />
       </View>
 
