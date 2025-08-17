@@ -153,6 +153,47 @@ export interface Database {
           }
         ]
       }
+      feedback: {
+        Row: {
+          id: string
+          user_id: string
+          feedback_type: 'bug' | 'feature_request' | 'general' | 'praise' | 'complaint'
+          message: string
+          rating: number | null
+          metadata: Json | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          feedback_type?: 'bug' | 'feature_request' | 'general' | 'praise' | 'complaint'
+          message: string
+          rating?: number | null
+          metadata?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          feedback_type?: 'bug' | 'feature_request' | 'general' | 'praise' | 'complaint'
+          message?: string
+          rating?: number | null
+          metadata?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -161,7 +202,7 @@ export interface Database {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      feedback_type: 'bug' | 'feature_request' | 'general' | 'praise' | 'complaint'
     }
     CompositeTypes: {
       [_ in never]: never
