@@ -9,24 +9,24 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
-  Image,
 } from 'react-native';
-import { router } from 'expo-router';
+import { Image } from 'react-native';
+import { Link, router } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react-native';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react-native';
 
 export default function LoginScreen() {
-  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
 
   const handleLogin = async () => {
     if (isLoading) return;
-
+    
     setIsLoading(true);
-    const result = await login(email.trim(), password);
+    const result = await login(email, password);
     setIsLoading(false);
 
     if (result.success) {
@@ -34,10 +34,6 @@ export default function LoginScreen() {
     } else {
       Alert.alert('Login Failed', result.error || 'Please try again');
     }
-  };
-
-  const navigateToRegister = () => {
-    router.push('/(auth)/register');
   };
 
   return (
@@ -60,7 +56,7 @@ export default function LoginScreen() {
               <Mail size={20} color="#A0A0A0" strokeWidth={1.5} />
             </View>
             <TextInput
-              style={styles.textInput}
+              style={styles.input}
               placeholder="Email"
               placeholderTextColor="#A0A0A0"
               value={email}
@@ -68,7 +64,6 @@ export default function LoginScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
-              editable={!isLoading}
             />
           </View>
 
@@ -77,20 +72,17 @@ export default function LoginScreen() {
               <Lock size={20} color="#A0A0A0" strokeWidth={1.5} />
             </View>
             <TextInput
-              style={styles.textInput}
+              style={styles.input}
               placeholder="Password"
               placeholderTextColor="#A0A0A0"
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
               autoCapitalize="none"
-              autoCorrect={false}
-              editable={!isLoading}
             />
             <TouchableOpacity
-              style={styles.eyeButton}
+              style={styles.eyeIcon}
               onPress={() => setShowPassword(!showPassword)}
-              activeOpacity={0.7}
             >
               {showPassword ? (
                 <EyeOff size={20} color="#A0A0A0" strokeWidth={1.5} />
@@ -101,9 +93,9 @@ export default function LoginScreen() {
           </View>
 
           <TouchableOpacity
-            style={[styles.loginButton, (!email || !password || isLoading) && styles.loginButtonDisabled]}
+            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
             onPress={handleLogin}
-            disabled={!email || !password || isLoading}
+            disabled={isLoading}
             activeOpacity={0.8}
           >
             {isLoading ? (
@@ -113,11 +105,13 @@ export default function LoginScreen() {
             )}
           </TouchableOpacity>
 
-          <View style={styles.registerContainer}>
-            <Text style={styles.registerText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={navigateToRegister} activeOpacity={0.7}>
-              <Text style={styles.registerLink}>Sign Up</Text>
-            </TouchableOpacity>
+          <View style={styles.signupContainer}>
+            <Text style={styles.signupText}>Don't have an account? </Text>
+            <Link href="/(auth)/register" asChild>
+              <TouchableOpacity>
+                <Text style={styles.signupLink}>Sign Up</Text>
+              </TouchableOpacity>
+            </Link>
           </View>
         </View>
       </View>
@@ -133,8 +127,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 80,
-    paddingBottom: 40,
+    justifyContent: 'center',
   },
   header: {
     alignItems: 'center',
@@ -165,10 +158,9 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: '300',
+    fontWeight: '600',
     color: '#2C2C2C',
     marginBottom: 8,
-    letterSpacing: 0.5,
   },
   subtitle: {
     fontSize: 16,
@@ -176,7 +168,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   form: {
-    flex: 1,
+    width: '100%',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -198,13 +190,13 @@ const styles = StyleSheet.create({
   inputIconContainer: {
     marginRight: 12,
   },
-  textInput: {
+  input: {
     flex: 1,
     fontSize: 16,
     color: '#2C2C2C',
     paddingVertical: 16,
   },
-  eyeButton: {
+  eyeIcon: {
     padding: 4,
   },
   loginButton: {
@@ -213,6 +205,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 8,
+    marginBottom: 24,
     shadowColor: '#D4AF37',
     shadowOffset: {
       width: 0,
@@ -223,25 +216,23 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   loginButtonDisabled: {
-    backgroundColor: '#E8E8E8',
-    shadowOpacity: 0,
+    opacity: 0.7,
   },
   loginButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
-  registerContainer: {
+  signupContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 32,
   },
-  registerText: {
+  signupText: {
     fontSize: 14,
     color: '#6B6B6B',
   },
-  registerLink: {
+  signupLink: {
     fontSize: 14,
     color: '#D4AF37',
     fontWeight: '600',

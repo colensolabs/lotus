@@ -9,25 +9,25 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
-  Image,
 } from 'react-native';
-import { router } from 'expo-router';
+import { Image } from 'react-native';
+import { Link, router } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
-import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react-native';
+import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react-native';
 
 export default function RegisterScreen() {
-  const { register } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { register } = useAuth();
 
   const handleRegister = async () => {
     if (isLoading) return;
-
+    
     setIsLoading(true);
-    const result = await register(email.trim(), password, name.trim());
+    const result = await register(email, password, name);
     setIsLoading(false);
 
     if (result.success) {
@@ -35,10 +35,6 @@ export default function RegisterScreen() {
     } else {
       Alert.alert('Registration Failed', result.error || 'Please try again');
     }
-  };
-
-  const navigateToLogin = () => {
-    router.push('/(auth)/login');
   };
 
   return (
@@ -52,7 +48,7 @@ export default function RegisterScreen() {
             <Image source={require('../../assets/images/logo2.jpg')} style={styles.logoImage} />
           </View>
           <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Begin your mindful journey</Text>
+          <Text style={styles.subtitle}>Join us on your mindful journey</Text>
         </View>
 
         <View style={styles.form}>
@@ -61,14 +57,13 @@ export default function RegisterScreen() {
               <User size={20} color="#A0A0A0" strokeWidth={1.5} />
             </View>
             <TextInput
-              style={styles.textInput}
+              style={styles.input}
               placeholder="Full Name"
               placeholderTextColor="#A0A0A0"
               value={name}
               onChangeText={setName}
               autoCapitalize="words"
               autoCorrect={false}
-              editable={!isLoading}
             />
           </View>
 
@@ -77,7 +72,7 @@ export default function RegisterScreen() {
               <Mail size={20} color="#A0A0A0" strokeWidth={1.5} />
             </View>
             <TextInput
-              style={styles.textInput}
+              style={styles.input}
               placeholder="Email"
               placeholderTextColor="#A0A0A0"
               value={email}
@@ -85,7 +80,6 @@ export default function RegisterScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
-              editable={!isLoading}
             />
           </View>
 
@@ -94,20 +88,17 @@ export default function RegisterScreen() {
               <Lock size={20} color="#A0A0A0" strokeWidth={1.5} />
             </View>
             <TextInput
-              style={styles.textInput}
-              placeholder="Password (min 6 characters)"
+              style={styles.input}
+              placeholder="Password"
               placeholderTextColor="#A0A0A0"
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
               autoCapitalize="none"
-              autoCorrect={false}
-              editable={!isLoading}
             />
             <TouchableOpacity
-              style={styles.eyeButton}
+              style={styles.eyeIcon}
               onPress={() => setShowPassword(!showPassword)}
-              activeOpacity={0.7}
             >
               {showPassword ? (
                 <EyeOff size={20} color="#A0A0A0" strokeWidth={1.5} />
@@ -118,23 +109,25 @@ export default function RegisterScreen() {
           </View>
 
           <TouchableOpacity
-            style={[styles.registerButton, (!name || !email || !password || isLoading) && styles.registerButtonDisabled]}
+            style={[styles.registerButton, isLoading && styles.registerButtonDisabled]}
             onPress={handleRegister}
-            disabled={!name || !email || !password || isLoading}
+            disabled={isLoading}
             activeOpacity={0.8}
           >
             {isLoading ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={styles.registerButtonText}>Create Account</Text>
+              <Text style={styles.registerButtonText}>Sign Up</Text>
             )}
           </TouchableOpacity>
 
           <View style={styles.loginContainer}>
             <Text style={styles.loginText}>Already have an account? </Text>
-            <TouchableOpacity onPress={navigateToLogin} activeOpacity={0.7}>
-              <Text style={styles.loginLink}>Sign In</Text>
-            </TouchableOpacity>
+            <Link href="/(auth)/login" asChild>
+              <TouchableOpacity>
+                <Text style={styles.loginLink}>Sign In</Text>
+              </TouchableOpacity>
+            </Link>
           </View>
         </View>
       </View>
@@ -150,8 +143,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 80,
-    paddingBottom: 40,
+    justifyContent: 'center',
   },
   header: {
     alignItems: 'center',
@@ -182,10 +174,9 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: '300',
+    fontWeight: '600',
     color: '#2C2C2C',
     marginBottom: 8,
-    letterSpacing: 0.5,
   },
   subtitle: {
     fontSize: 16,
@@ -193,7 +184,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   form: {
-    flex: 1,
+    width: '100%',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -215,13 +206,13 @@ const styles = StyleSheet.create({
   inputIconContainer: {
     marginRight: 12,
   },
-  textInput: {
+  input: {
     flex: 1,
     fontSize: 16,
     color: '#2C2C2C',
     paddingVertical: 16,
   },
-  eyeButton: {
+  eyeIcon: {
     padding: 4,
   },
   registerButton: {
@@ -230,6 +221,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 8,
+    marginBottom: 24,
     shadowColor: '#D4AF37',
     shadowOffset: {
       width: 0,
@@ -240,8 +232,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   registerButtonDisabled: {
-    backgroundColor: '#E8E8E8',
-    shadowOpacity: 0,
+    opacity: 0.7,
   },
   registerButtonText: {
     color: '#FFFFFF',
@@ -252,7 +243,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 32,
   },
   loginText: {
     fontSize: 14,

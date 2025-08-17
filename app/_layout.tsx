@@ -1,13 +1,27 @@
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useAuth } from '@/hooks/useAuth';
-import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
+import { useAuth } from '@/hooks/useAuth';
+import { useSettingsPreloader } from '@/hooks/useSettingsPreloader';
+import { router } from 'expo-router';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
 export default function RootLayout() {
   useFrameworkReady();
   const { isAuthenticated, isLoading } = useAuth();
+  // Preload settings in the background
+  useSettingsPreloader();
+
+  useEffect(() => {
+    if (!isLoading) {
+      if (isAuthenticated) {
+        router.replace('/(tabs)');
+      } else {
+        router.replace('/(auth)/login');
+      }
+    }
+  }, [isAuthenticated, isLoading]);
 
   if (isLoading) {
     return (
@@ -19,16 +33,11 @@ export default function RootLayout() {
 
   return (
     <>
-      {isAuthenticated ? (
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-      ) : (
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        </Stack>
-      )}
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="+not-found" />
+      </Stack>
       <StatusBar style="auto" />
     </>
   );
