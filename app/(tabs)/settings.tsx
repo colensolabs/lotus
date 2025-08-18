@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Image } from 'react-native';
 import { useState, useEffect } from 'react';
-import { Bot as Lotus, Bell, Heart, MessageCircle, CircleHelp as HelpCircle, Star, Vibrate, User, Settings as SettingsIcon, Shield } from 'lucide-react-native';
+import { Bot as feelbetter, Bell, Heart, MessageCircle, CircleHelp as HelpCircle, Star, Vibrate, User, Settings as SettingsIcon, Shield } from 'lucide-react-native';
 import { LogOut } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { useStreamingSpeed, StreamingSpeed } from '@/hooks/useStreamingSpeed';
@@ -370,7 +370,7 @@ export default function SettingsScreen() {
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          Lotus Guide v1.0{'\n'}
+          feel better v1.0{'\n'}
           Made with compassion for your journey
         </Text>
       </View>

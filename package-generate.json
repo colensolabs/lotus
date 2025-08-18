@@ -1,7 +1,7 @@
 {
-  "name": "lotus-example-generator",
+  "name": "feelbetter-example-generator",
   "version": "1.0.0",
-  "description": "Generate example conversations for Lotus app",
+  "description": "Generate example conversations for feel better app",
   "main": "generate_examples.js",
   "scripts": {
     "generate": "node generate_examples.js"
@@ -9,8 +9,8 @@
   "dependencies": {
     "axios": "^1.6.0"
   },
-  "keywords": ["lotus", "example", "conversations", "perplexity"],
-  "author": "Lotus Team",
+  "keywords": ["feelbetter", "example", "conversations", "perplexity"],
+  "author": "feel better Team",
   "license": "MIT"
 }
 

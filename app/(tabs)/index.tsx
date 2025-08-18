@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Image } from 'react-native';
 import { router } from 'expo-router';
-import { MessageCircle, Heart, Bot as Lotus, Compass, MessageSquare, RefreshCw } from 'lucide-react-native';
+import { MessageCircle, Heart, Bot as feelbetter, Compass, MessageSquare, RefreshCw } from 'lucide-react-native';
 import { useExampleConversations } from '@/hooks/useExampleConversations';
 
 // Icon mapping for different types of conversations
@@ -47,7 +47,7 @@ export default function HomeScreen() {
         <View style={styles.iconContainer}>
           <Image source={require('../../assets/images/logo2.jpg')} style={styles.logoImage} />
         </View>
-        <Text style={styles.title}>Lotus Guide</Text>
+        <Text style={styles.title}>feel better</Text>
         <Text style={styles.subtitle}>
           Find peace and wisdom through Buddhist guidance for life's challenges
         </Text>
