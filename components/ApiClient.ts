@@ -232,7 +232,14 @@ export class BuddhistGuidanceAPI {
     // Using hardcoded API key
   }
 
-  async getBuddhistGuidance(userMessage: string, isFollowUp: boolean = false): Promise<BuddhistGuidanceResponse> {
+  async getBuddhistGuidance(userMessage: string, isFollowUp: boolean = false, userPreferences?: any): Promise<BuddhistGuidanceResponse> {
+    // Debug: Log the user preferences being used
+    console.log('User preferences for API call:', {
+      tradition: userPreferences?.buddhist_tradition || 'general_buddhist',
+      topics: userPreferences?.topics_of_interest || [],
+      hasPreferences: !!userPreferences
+    });
+    
     // Check safety guardrails first
     const safetyCheck = checkSafetyGuardrails(userMessage);
     if (safetyCheck) {
@@ -252,7 +259,7 @@ export class BuddhistGuidanceAPI {
       };
     }
 
-    const prompt = isFollowUp ? this.createFollowUpPrompt(userMessage) : this.createStructuredPrompt(userMessage);
+    const prompt = isFollowUp ? this.createFollowUpPrompt(userMessage, userPreferences) : this.createStructuredPrompt(userMessage, userPreferences);
 
     try {
       const response = await fetch(PERPLEXITY_API_URL, {
@@ -289,6 +296,8 @@ export class BuddhistGuidanceAPI {
       
       // Debug: Log the raw API response
       console.log('Raw API Response:', content);
+      console.log('Raw response length:', content.length);
+      console.log('Contains REFLECTION:', content.includes('REFLECTION:'));
       console.log('---');
       
       return isFollowUp ? this.parseFollowUpResponse(content) : this.parseStructuredResponse(content);
@@ -298,9 +307,39 @@ export class BuddhistGuidanceAPI {
     }
   }
 
-  private createStructuredPrompt(userMessage: string): string {
+  private createStructuredPrompt(userMessage: string, userPreferences?: any): string {
+    // Get the Buddhist tradition preference
+    const tradition = userPreferences?.buddhist_tradition || 'general_buddhist';
+    
+    // Debug: Log the tradition being used
+    //console.log('🔍 STRUCTURED PROMPT - Using tradition:', tradition);
+    
+    // Create tradition-specific guidance
+    let traditionGuidance = '';
+    switch (tradition) {
+      case 'secular':
+        traditionGuidance = 'Focus on secular Buddhist principles without religious context. Dont use the word Buddhism or religion. Emphasize mindfulness, compassion, and practical wisdom that can be applied regardless of religious beliefs.';
+        break;
+      case 'theravada':
+        traditionGuidance = 'Draw from Theravada Buddhist teachings, emphasizing the Four Noble Truths, Eightfold Path, and mindfulness practices. Reference Pali Canon teachings and Theravada teachers.';
+        break;
+      case 'mahayana':
+        traditionGuidance = 'Incorporate Mahayana Buddhist wisdom, emphasizing compassion (karuna), wisdom (prajna), and the bodhisattva path. Reference Mahayana sutras and teachings on emptiness and interconnectedness.';
+        break;
+      case 'tibetan':
+        traditionGuidance = 'Draw from Tibetan Buddhist traditions, emphasizing compassion, wisdom, and the integration of mind and heart. Reference Tibetan teachers, practices, and the union of wisdom and compassion.';
+        break;
+      case 'zen':
+        traditionGuidance = 'Incorporate Zen Buddhist teachings, emphasizing direct experience, mindfulness, and the practice of presence. Reference Zen masters, koans, and the simplicity of direct awareness.';
+        break;
+      default: // general_buddhist
+        traditionGuidance = 'Draw from core Buddhist teachings across traditions, emphasizing universal principles of compassion, wisdom, and mindful living.';
+    }
+
     return `
 Please provide Buddhist guidance for this situation: "${userMessage}"
+
+BUDDHIST TRADITION FOCUS: ${traditionGuidance}
 
 Important safety rules:
 - NEVER provide medical, psychological, or legal advice.
@@ -318,12 +357,11 @@ Respond in this exact format:
 INTRO:
 Begin with a single, gentle acknowledgement in a warm, conversational tone that reflects back what the person shared and reassures them they're not alone. Keep it to 3 or 5 short sentences, e.g., "Thanks for sharing that—it sounds really hard, and I'm here with you." Avoid clinical language like "I understand you are facing…" or "Here's guidance rooted in…".
 
-
 PRACTICAL STEPS:
 [Provide 3-4 specific, actionable steps rooted in Buddhist practice]
 
 REFLECTION:
-[Provide a short mindfulness or meditation practice (2-3 sentences) that the person can do right now]
+[Provide a short mindfulness or meditation practice (2-3 sentences) that the person can do right now, appropriate to the tradition]
 
 SCRIPTURE:
 Text: "[Include a relevant Buddhist quote or teaching]"
@@ -337,9 +375,39 @@ Keep the response compassionate, practical, and grounded in authentic Buddhist w
     `;
   }
 
-  private createFollowUpPrompt(userMessage: string): string {
+  private createFollowUpPrompt(userMessage: string, userPreferences?: any): string {
+    // Get the Buddhist tradition preference
+    const tradition = userPreferences?.buddhist_tradition || 'general_buddhist';
+    
+    // Debug: Log the tradition being used
+    console.log('🔍 FOLLOW-UP PROMPT - Using tradition:', tradition);
+    
+    // Create tradition-specific guidance for follow-ups
+    let traditionGuidance = '';
+    switch (tradition) {
+      case 'secular':
+        traditionGuidance = 'Draw from secular Buddhist principles. Dont use the word Buddhism or religion. Dont talk about rebirth';
+        break;
+      case 'theravada':
+        traditionGuidance = 'Reference Theravada teachings and practices, emphasizing mindfulness and the path to liberation.';
+        break;
+      case 'mahayana':
+        traditionGuidance = 'Incorporate Mahayana wisdom, emphasizing compassion and the bodhisattva ideal.';
+        break;
+      case 'tibetan':
+        traditionGuidance = 'Draw from Tibetan Buddhist practices, emphasizing the union of wisdom and compassion.';
+        break;
+      case 'zen':
+        traditionGuidance = 'Reference Zen teachings, emphasizing direct experience and mindful presence.';
+        break;
+      default: // general_buddhist
+        traditionGuidance = '';
+    }
+
     return `
 This is a follow-up question in an ongoing Buddhist guidance conversation: "${userMessage}"
+
+BUDDHIST TRADITION FOCUS: ${traditionGuidance}
 
 Important safety rules:
 - NEVER provide medical, psychological, or legal advice.
@@ -352,18 +420,26 @@ Important safety rules:
 Please provide a compassionate, conversational response that:
 - Directly addresses their follow-up question
 - Maintains the warm, supportive tone from the initial guidance
-- Offers practical Buddhist wisdom without formal structure
+- Offers practical Buddhist wisdom from the specified tradition without formal structure
 - Keeps the response natural and flowing, like a caring conversation
 - Is 2-4 paragraphs maximum
 - Ends with a gentle question to continue the dialogue
 - Prioritizes user safety over providing guidance
 
-Respond naturally without any special formatting or sections.
+Respond naturally without any special formatting or sections, drawing from the specified Buddhist tradition.
     `;
   }
 
   private parseStructuredResponse(content: string): BuddhistGuidanceResponse {
     console.log('Parsing content:', content.substring(0, 200) + '...');
+    
+    // Check for tradition identifier at the beginning
+    const traditionMatch = content.match(/^\[TRADITION: ([^\]]+)\]/);
+    if (traditionMatch) {
+      console.log('🎯 DETECTED TRADITION IN RESPONSE:', traditionMatch[1]);
+    } else {
+      console.log('⚠️ NO TRADITION IDENTIFIER FOUND IN RESPONSE');
+    }
     
     const sections = {
       intro: '',
@@ -408,8 +484,12 @@ Respond naturally without any special formatting or sections.
 
       // Parse Reflection
       const reflectionMatch = cleanContent.match(/REFLECTION:\s*([\s\S]*?)(?=SCRIPTURE:|$)/i);
+      console.log('Reflection match:', reflectionMatch ? reflectionMatch[1].substring(0, 100) + '...' : 'No match');
       if (reflectionMatch) {
         sections.reflection = this.cleanSection(reflectionMatch[1]);
+        console.log('✅ Reflection parsed successfully:', sections.reflection.substring(0, 100) + '...');
+      } else {
+        console.log('❌ No reflection section found in API response');
       }
 
       // Parse Scripture
@@ -444,6 +524,8 @@ Respond naturally without any special formatting or sections.
         intro: sections.intro.substring(0, 100) + '...',
         practicalSteps: sections.practicalSteps.substring(0, 100) + '...',
         reflection: sections.reflection.substring(0, 100) + '...',
+        reflectionLength: sections.reflection.length,
+        hasReflection: sections.reflection.length > 0,
       });
 
       return sections;
@@ -465,6 +547,14 @@ Respond naturally without any special formatting or sections.
   }
 
   private parseFollowUpResponse(content: string): BuddhistGuidanceResponse {
+    // Check for tradition identifier at the beginning
+    const traditionMatch = content.match(/^\[TRADITION: ([^\]]+)\]/);
+    if (traditionMatch) {
+      console.log('🎯 FOLLOW-UP - DETECTED TRADITION IN RESPONSE:', traditionMatch[1]);
+    } else {
+      console.log('⚠️ FOLLOW-UP - NO TRADITION IDENTIFIER FOUND IN RESPONSE');
+    }
+    
     // Clean up the content
     const cleanContent = content
       .replace(/\*\*/g, '') // Remove bold markdown
@@ -510,5 +600,5 @@ Respond naturally without any special formatting or sections.
 const apiInstance = new BuddhistGuidanceAPI();
 
 export const getBuddhistGuidance = async (message: string, isFollowUp: boolean = false, userPreferences?: any): Promise<BuddhistGuidanceResponse> => {
-  return apiInstance.getBuddhistGuidance(message, isFollowUp);
+  return apiInstance.getBuddhistGuidance(message, isFollowUp, userPreferences);
 };

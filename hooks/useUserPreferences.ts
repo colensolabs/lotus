@@ -114,6 +114,7 @@ export const useUserPreferences = () => {
       }
 
       console.log('createOrUpdatePreferences - data returned:', data);
+      console.log('🎯 UPDATED TRADITION TO:', data.buddhist_tradition);
       setPreferences(data);
       return { success: true };
     } catch (err) {
@@ -146,6 +147,11 @@ export const useUserPreferences = () => {
     return result;
   };
 
+  const refetchPreferences = async () => {
+    console.log('🔄 Refetching user preferences...');
+    await fetchPreferences();
+  };
+
   return {
     preferences,
     isLoading,
@@ -155,5 +161,6 @@ export const useUserPreferences = () => {
     updateTopics,
     updateTradition,
     updateSaveConversations,
+    refetchPreferences,
   };
 };
