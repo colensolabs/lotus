@@ -63,7 +63,7 @@ CREATE POLICY "Admins can view all feedback"
     EXISTS (
       SELECT 1 FROM user_profiles 
       WHERE id = auth.uid() 
-      AND email IN ('admin@lotusguide.com') -- Add admin emails here
+      AND email IN ('admin@feelbetter.com') -- Add admin emails here
     )
   );
 

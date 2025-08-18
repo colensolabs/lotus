@@ -13,7 +13,7 @@ import {
   Image,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { Send, User, Bot as Lotus, MessageSquare, Square } from 'lucide-react-native';
+import { Send, User, Bot as feelbetter, MessageSquare, Square } from 'lucide-react-native';
 import { getBuddhistGuidance } from '@/components/ApiClient';
 import { StreamingGuidance } from '@/components/StreamingGuidance';
 import { StreamingText } from '@/components/StreamingText';
@@ -716,7 +716,7 @@ export default function ChatScreen() {
             <Image source={require('../../assets/images/logo2.jpg')} style={styles.headerLogoImage} />
           </View>
           <Text style={styles.headerTitle}>
-            {conversationId ? 'Continue Chat' : 'Lotus Guide'}
+            {conversationId ? 'Continue Chat' : 'feel better'}
           </Text>
         </View>
 
