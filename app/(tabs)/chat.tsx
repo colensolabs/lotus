@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -12,7 +12,7 @@ import {
   Alert,
   Image,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Send, User, Bot as feelbetter, MessageSquare, Square } from 'lucide-react-native';
 import { getBuddhistGuidance } from '@/components/ApiClient';
 import { StreamingGuidance } from '@/components/StreamingGuidance';
@@ -80,8 +80,9 @@ export default function ChatScreen() {
   const { createConversation, updateConversation } = useConversations();
   const { messages: dbMessages, addMessageToConversation, clearMessages } = useMessages(conversationId || null);
   const { user } = useAuth();
-  const { preferences } = useUserPreferences();
+  const { preferences, refetchPreferences } = useUserPreferences();
   const [messages, setMessages] = useState<Message[]>([]);
+  const hasRefetchedOnFocus = useRef(false);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
@@ -158,7 +159,25 @@ export default function ChatScreen() {
     if (initialPrompt && typeof initialPrompt === 'string' && hasProcessedInitialSetup && !conversationStarted) {
       handleSendMessage(initialPrompt);
     }
-  }, [initialPrompt, hasProcessedInitialSetup, conversationStarted]); 
+  }, [initialPrompt, hasProcessedInitialSetup, conversationStarted]);
+
+  // Refetch preferences when screen comes into focus to ensure we have latest settings
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🔄 Chat screen focused - checking preferences...');
+      // Only refetch if we have a user, preferences are not loading, and we haven't already refetched
+      if (user && !isLoading && !hasRefetchedOnFocus.current) {
+        console.log('🔄 Actually refetching preferences...');
+        hasRefetchedOnFocus.current = true;
+        refetchPreferences();
+      }
+      
+      // Cleanup function to reset the ref when screen loses focus
+      return () => {
+        hasRefetchedOnFocus.current = false;
+      };
+    }, [user, isLoading])
+  ); 
 
   const handleExampleConversation = async () => {
     if (!exampleQuestion || !exampleGuidanceResponse) return;
@@ -401,6 +420,11 @@ export default function ChatScreen() {
 
     try {
       console.log('Starting API call to getBuddhistGuidance...');
+      console.log('🎯 CURRENT PREFERENCES:', {
+        tradition: preferences?.buddhist_tradition || 'none',
+        topics: preferences?.topics_of_interest || [],
+        hasPreferences: !!preferences
+      });
       const guidance = await getBuddhistGuidance(messageText, isFollowUp, preferences || undefined);
       console.log('API call completed successfully!');
       

@@ -45,6 +45,8 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
     hasScripture: !!guidance.scripture,
     hasOutro: !!guidance.outro,
     practicalStepsLength: guidance.practicalSteps?.length || 0,
+    reflectionContent: guidance.reflection?.substring(0, 100) + '...',
+    reflectionLength: guidance.reflection?.length || 0,
   });
 
   const handleSectionComplete = () => {
@@ -59,7 +61,13 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
         break;
       case 'steps':
         console.log('Transitioning from steps to reflection');
-        setCurrentSection('reflection');
+        console.log('Reflection content available:', !!guidance.reflection);
+        if (guidance.reflection && guidance.reflection.trim().length > 0) {
+          setCurrentSection('reflection');
+        } else {
+          console.log('Skipping reflection (no content), going to scripture');
+          setCurrentSection('scripture');
+        }
         break;
       case 'reflection':
         console.log('Transitioning from reflection to scripture');
@@ -89,9 +97,13 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
   const renderSteps = () => {
     if (!guidance.practicalSteps) return null;
     
+    // Improved step parsing to handle various formats
     const steps = guidance.practicalSteps
       .split(/[•\n]/)
-      .filter(step => step.trim().length > 0);
+      .map(step => step.trim())
+      .filter(step => step.length > 0 && !step.match(/^\d+\./)); // Remove numbered items
+
+    console.log('Parsed steps:', steps);
 
     return (
       <View style={styles.stepsContainer}>
@@ -100,7 +112,7 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
             <View style={styles.stepNumber}>
               <Text style={styles.stepNumberText}>{index + 1}</Text>
             </View>
-            <Text style={styles.stepText}>{step.trim()}</Text>
+            <Text style={styles.stepText}>{step}</Text>
           </View>
         ))}
       </View>
@@ -121,18 +133,18 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
         />
       )}
 
-                    {/* Practical Steps Section */}
-       {(() => {
-         const shouldShow = guidance.practicalSteps && (currentSection === 'steps' || currentSection === 'reflection' || currentSection === 'scripture' || currentSection === 'explanation' || currentSection === 'outro' || currentSection === 'complete' || isCancelled || isStreamingCancelled);
-         console.log('Practical steps condition:', {
-           hasPracticalSteps: !!guidance.practicalSteps,
-           currentSection,
-           isCancelled,
-           isStreamingCancelled,
-           shouldShow,
-         });
-         return shouldShow;
-       })() && (
+                                                                                   {/* Practical Steps Section */}
+         {(() => {
+           const shouldShow = guidance.practicalSteps && (currentSection === 'steps' || currentSection === 'reflection' || currentSection === 'scripture' || currentSection === 'explanation' || currentSection === 'outro' || currentSection === 'complete' || isCancelled || isStreamingCancelled);
+           console.log('Practical steps condition:', {
+             hasPracticalSteps: !!guidance.practicalSteps,
+             currentSection,
+             isCancelled,
+             isStreamingCancelled,
+             shouldShow,
+           });
+           return shouldShow;
+         })() && (
          <View style={styles.practicalStepsCard}>
            <Text style={styles.sectionTitle}>Practical Steps</Text>
            {currentSection === 'steps' && !isCancelled ? (
@@ -152,24 +164,24 @@ export const StreamingGuidance: React.FC<StreamingGuidanceProps> = ({
          </View>
        )}
 
-      {/* Reflection Section */}
-      {guidance.reflection && (currentSection === 'reflection' || currentSection === 'scripture' || currentSection === 'explanation' || currentSection === 'complete' || isCancelled) && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Reflection</Text>
-          {currentSection === 'reflection' && !isStreamingCancelled ? (
-            <StreamingText
-              text={guidance.reflection}
-              speed={speed}
-              onComplete={handleSectionComplete}
-              isCancelled={isStreamingCancelled}
-              hapticsEnabled={hapticsEnabled}
-              style={styles.sectionText}
-            />
-          ) : (
-            <Text style={styles.sectionText}>{guidance.reflection}</Text>
-          )}
-        </View>
-      )}
+                                                       {/* Reflection Section */}
+         {guidance.reflection && (currentSection === 'reflection' || currentSection === 'scripture' || currentSection === 'explanation' || currentSection === 'complete' || isStreamingCancelled) && (
+                  <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Reflection</Text>
+            {currentSection === 'reflection' && !isStreamingCancelled ? (
+              <StreamingText
+                text={guidance.reflection}
+                speed={speed}
+                onComplete={handleSectionComplete}
+                isCancelled={isStreamingCancelled}
+                hapticsEnabled={hapticsEnabled}
+                style={styles.sectionText}
+              />
+            ) : (
+              <Text style={styles.sectionText}>{guidance.reflection}</Text>
+            )}
+          </View>
+       )}
 
       {/* Scripture Section */}
       {guidance.scripture && (currentSection === 'scripture' || currentSection === 'explanation' || currentSection === 'complete' || isStreamingCancelled) && (
